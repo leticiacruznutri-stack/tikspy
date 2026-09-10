@@ -111,10 +111,9 @@ function ConteudoPage() {
     );
   };
 
-  const cycleStatus = async (piece: ContentPiece) => {
-    const currentIdx = STATUS_CYCLE.indexOf(piece.status);
-    const nextStatus = STATUS_CYCLE[(currentIdx + 1) % STATUS_CYCLE.length];
-    await updatePiece(piece.id, { status: nextStatus });
+  const changeStatus = async (piece: ContentPiece, newStatus: StatusType) => {
+    if (newStatus === piece.status) return;
+    await updatePiece(piece.id, { status: newStatus });
     reload();
   };
 
@@ -438,13 +437,16 @@ function ConteudoPage() {
                     >
                       {angle?.emoji} {angle?.label}
                     </span>
-                    <button
-                      onClick={() => cycleStatus(piece)}
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${STATUS_COLORS[piece.status]}`}
-                      title="Clique para mudar status"
+                    <select
+                      value={piece.status}
+                      onChange={(e) => changeStatus(piece, e.target.value as StatusType)}
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 appearance-none cursor-pointer pr-4 ${STATUS_COLORS[piece.status]}`}
+                      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
                     >
-                      {STATUS_LABELS[piece.status]}
-                    </button>
+                      {STATUS_CYCLE.map((s) => (
+                        <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <button
