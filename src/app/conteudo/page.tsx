@@ -489,8 +489,19 @@ function ConteudoPage() {
                   </div>
                 </div>
 
+                {/* Headline (texto na tela) */}
+                {piece.headline && (
+                  <div className="px-3 pt-2.5 pb-1">
+                    <div className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a1a2e] px-2.5 py-1">
+                      <span className="text-[11px] font-bold text-white uppercase tracking-wide">
+                        {piece.headline}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Fala */}
-                <div className="px-3 py-2.5 flex-1">
+                <div className="px-3 py-2 flex-1">
                   <p className="text-[13px] text-[#1a1a2e] leading-snug">
                     &ldquo;{piece.text}&rdquo;
                   </p>

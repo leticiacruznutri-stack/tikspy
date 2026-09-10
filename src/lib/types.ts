@@ -24,6 +24,7 @@ export type ContentPiece = {
   angle: Angle;
   text: string;
   visualHook?: string;
+  headline?: string;
   status: 'draft' | 'ready' | 'filmed' | 'posted';
   createdAt: string;
 };

@@ -34,6 +34,7 @@ function toDbPiece(p: Partial<ContentPiece>) {
     ...(p.angle !== undefined && { angle: p.angle }),
     ...(p.text !== undefined && { text: p.text }),
     ...(p.visualHook !== undefined && { visual_hook: p.visualHook }),
+    ...(p.headline !== undefined && { headline: p.headline }),
     ...(p.status !== undefined && { status: p.status }),
   };
 }
@@ -46,6 +47,7 @@ function fromDbPiece(row: any): ContentPiece {
     angle: row.angle,
     text: row.text,
     visualHook: row.visual_hook,
+    headline: row.headline,
     status: row.status,
     createdAt: row.created_at,
   };
