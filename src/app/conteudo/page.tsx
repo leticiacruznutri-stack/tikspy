@@ -50,6 +50,31 @@ const TAB_CONFIG: { type: TabType; label: string; icon: typeof Zap }[] = [
   { type: "cta", label: "CTAs", icon: Megaphone },
 ];
 
+function VisualHookPreview({ visualHook }: { visualHook: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = visualHook.length > 80;
+  const summary = isLong ? visualHook.split(/\.\s/)[0] + "." : visualHook;
+
+  return (
+    <div
+      className={`px-3 py-2 bg-[#faf8f5] border-t border-[#f0ebe3] ${isLong ? "cursor-pointer" : ""}`}
+      onClick={() => isLong && setExpanded(!expanded)}
+    >
+      <div className="flex items-start gap-1.5">
+        <Video size={11} className="text-[#b8a88a] mt-0.5 shrink-0" />
+        <p className="text-[11px] text-[#9ca3af] leading-snug flex-1">
+          {expanded ? visualHook : summary}
+        </p>
+        {isLong && (
+          <span className="text-[10px] text-[#c8b99a] shrink-0 mt-0.5">
+            {expanded ? "−" : "+"}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ConteudoPageWrapper() {
   return (
     <Suspense fallback={<div className="p-8 text-[#9ca3af]">Carregando...</div>}>
@@ -473,14 +498,7 @@ function ConteudoPage() {
 
                 {/* Take Visual */}
                 {piece.visualHook && (
-                  <div className="px-3 py-2 bg-[#faf8f5] border-t border-[#f0ebe3]">
-                    <div className="flex items-start gap-1.5">
-                      <Video size={11} className="text-[#b8a88a] mt-0.5 shrink-0" />
-                      <p className="text-[11px] text-[#9ca3af] leading-snug">
-                        {piece.visualHook}
-                      </p>
-                    </div>
-                  </div>
+                  <VisualHookPreview visualHook={piece.visualHook} />
                 )}
               </div>
             );
