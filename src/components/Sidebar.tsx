@@ -8,7 +8,6 @@ import {
   Film,
   Calendar,
   Package,
-  MessageCircle,
   X,
   Menu,
 } from "lucide-react";
@@ -18,7 +17,6 @@ const navItems = [
   { href: "/conteudo", label: "Conteúdo", icon: FileText },
   { href: "/videos", label: "Montar Vídeos", icon: Film },
   { href: "/agenda", label: "Agenda", icon: Calendar },
-  { href: "/assistente", label: "Assistente IA", icon: MessageCircle },
 ];
 
 export function Sidebar({
