@@ -10,6 +10,7 @@ import {
   Pencil,
   Trash2,
   X,
+  Video,
 } from "lucide-react";
 import {
   getHooks,
@@ -218,8 +219,8 @@ function ConteudoPage() {
             onClick={() => setSelectedProducts([])}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               selectedProducts.length === 0
-                ? "bg-[#1a1a2e] text-white"
-                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea]"
+                ? "bg-[#1a1a2e] text-white shadow-sm"
+                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea] hover:text-[#1a1a2e]"
             }`}
           >
             Todos
@@ -248,8 +249,8 @@ function ConteudoPage() {
             onClick={() => setSelectedAngles([])}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               selectedAngles.length === 0
-                ? "bg-[#1a1a2e] text-white"
-                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea]"
+                ? "bg-[#1a1a2e] text-white shadow-sm"
+                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea] hover:text-[#1a1a2e]"
             }`}
           >
             Todos
@@ -283,8 +284,8 @@ function ConteudoPage() {
             onClick={() => setSelectedStatus("all")}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               selectedStatus === "all"
-                ? "bg-[#1a1a2e] text-white"
-                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea]"
+                ? "bg-[#1a1a2e] text-white shadow-sm"
+                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea] hover:text-[#1a1a2e]"
             }`}
           >
             Todos
@@ -416,65 +417,70 @@ function ConteudoPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-3">
           {filtered.map((piece) => {
-            const product = getProduct(piece.productId);
             const angle = ANGLES.find((a) => a.id === piece.angle);
 
             return (
               <div
                 key={piece.id}
-                className="rounded-2xl bg-white border border-[#e8e0d4] p-4 shadow-sm hover:bg-[#f5f0ea]/50 transition-colors group"
+                className="rounded-2xl bg-white border border-[#e8e0d4] shadow-sm hover:shadow-md transition-shadow group"
               >
-                {/* Top row: product + angle badges */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="inline-flex items-center gap-1 rounded-lg bg-[#FAF7F2] px-2 py-1 text-xs font-medium text-[#1a1a2e]">
-                    {product?.emoji} {product?.name}
-                  </span>
-                  <span
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                    style={{ backgroundColor: angle?.color }}
-                  >
-                    {angle?.emoji} {angle?.label}
-                  </span>
-                </div>
-
-                {/* Text */}
-                <p className="text-sm text-[#1a1a2e] leading-relaxed mb-2">
-                  {piece.text}
-                </p>
-
-                {/* Visual hook */}
-                {piece.visualHook && (
-                  <p className="text-xs text-[#9ca3af] italic mb-2">
-                    {piece.visualHook}
-                  </p>
-                )}
-
-                {/* Bottom row: status + actions */}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#e8e0d4]">
-                  <button
-                    onClick={() => cycleStatus(piece)}
-                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium text-white ${STATUS_COLORS[piece.status]}`}
-                    title="Clique para mudar status"
-                  >
-                    {STATUS_LABELS[piece.status]}
-                  </button>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => startEdit(piece)}
-                      className="rounded-lg p-1.5 text-[#9ca3af] hover:text-[#1a1a2e] hover:bg-[#FAF7F2] transition-colors"
+                {/* Main content */}
+                <div className="p-5">
+                  {/* Top: angle tag + status */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium"
+                      style={{ backgroundColor: angle?.color + "15", color: angle?.color }}
                     >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(piece.id)}
-                      className="rounded-lg p-1.5 text-[#9ca3af] hover:text-[#fe2c55] hover:bg-[#fe2c55]/10 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                      {angle?.emoji} {angle?.label}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => cycleStatus(piece)}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-white ${STATUS_COLORS[piece.status]}`}
+                        title="Clique para mudar status"
+                      >
+                        {STATUS_LABELS[piece.status]}
+                      </button>
+                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => startEdit(piece)}
+                          className="rounded-lg p-1.5 text-[#9ca3af] hover:text-[#1a1a2e] hover:bg-[#FAF7F2] transition-colors"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(piece.id)}
+                          className="rounded-lg p-1.5 text-[#9ca3af] hover:text-[#fe2c55] hover:bg-[#fe2c55]/10 transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Copy text - prominent */}
+                  <p className="text-[15px] text-[#1a1a2e] leading-relaxed font-medium">
+                    &ldquo;{piece.text}&rdquo;
+                  </p>
                 </div>
+
+                {/* Visual hook / Scene - separate section */}
+                {piece.visualHook && (
+                  <div className="px-5 py-3 bg-[#FAF7F2] border-t border-[#e8e0d4] rounded-b-2xl">
+                    <div className="flex items-start gap-2">
+                      <Video size={14} className="text-[#9ca3af] mt-0.5 shrink-0" />
+                      <div>
+                        <span className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider">Cena</span>
+                        <p className="text-sm text-[#6b7280] leading-relaxed mt-0.5">
+                          {piece.visualHook}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
