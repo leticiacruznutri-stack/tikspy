@@ -202,7 +202,7 @@ export default function ProdutosPage() {
                       <img
                         src={product.imageUrl}
                         alt={product.name}
-                        className="w-10 h-10 rounded-lg object-cover border border-[#e8e0d4]"
+                        className="w-14 h-14 rounded-xl object-cover border border-[#e8e0d4]"
                       />
                     ) : (
                       <span className="text-3xl">{product.emoji}</span>

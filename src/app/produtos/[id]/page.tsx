@@ -221,7 +221,7 @@ function ProductDetail() {
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="w-14 h-14 rounded-xl object-cover border border-[#e8e0d4]"
+              className="w-16 h-16 rounded-xl object-cover border border-[#e8e0d4]"
             />
           ) : (
             <span className="text-3xl">{product.emoji}</span>
