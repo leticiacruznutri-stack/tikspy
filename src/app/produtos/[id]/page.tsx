@@ -30,15 +30,15 @@ const CATEGORY_COLORS: Record<string, string> = {
 const CATEGORY_LABELS: Record<string, string> = {
   structural: "Estrutural",
   functional: "Funcional",
-  aesthetic: "Estetico",
+  aesthetic: "Estético",
   commercial: "Comercial",
 };
 
 const PYRAMID_LEVELS = [
   { key: "desire", label: "DESEJO", width: "100%", color: "#fe2c55" },
   { key: "justification", label: "JUSTIFICATIVA", width: "75%", color: "#f59e0b" },
-  { key: "rationalization", label: "RACIONALIZACAO", width: "50%", color: "#3b82f6" },
-  { key: "conversion", label: "CONVERSAO", width: "35%", color: "#22c55e" },
+  { key: "rationalization", label: "RACIONALIZAÇÃO", width: "50%", color: "#3b82f6" },
+  { key: "conversion", label: "CONVERSÃO", width: "35%", color: "#22c55e" },
 ];
 
 // ── Feature Card ──
@@ -88,14 +88,14 @@ function FeatureCard({ feature }: { feature: ProductFeature }) {
         <div className="px-4 pb-4 space-y-3 border-t border-[#e8e0d4] pt-3">
           <DetailRow label="Por que" value={feature.why} />
           <DetailRow label="O que faz" value={feature.whatItDoes} />
-          <DetailRow label="Beneficio dimensionado" value={feature.dimensioned} />
+          <DetailRow label="Benefício dimensionado" value={feature.dimensioned} />
           <DetailRow
-            label="Emocao positiva"
+            label="Emoção positiva"
             value={feature.emotionPositive}
             valueClass="text-green-700"
           />
           <DetailRow
-            label="Emocao negativa"
+            label="Emoção negativa"
             value={feature.emotionNegative}
             valueClass="text-red-600"
           />
@@ -176,7 +176,7 @@ function ProductDetail() {
         </Link>
         <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 shadow-sm text-center">
           <Package size={40} className="mx-auto mb-3 text-[#9ca3af] opacity-50" />
-          <p className="text-[#9ca3af] text-sm">Produto nao encontrado</p>
+          <p className="text-[#9ca3af] text-sm">Produto não encontrado</p>
         </div>
       </div>
     );
@@ -191,7 +191,7 @@ function ProductDetail() {
     { key: "all", label: "Todos" },
     { key: "structural", label: "Estruturais" },
     { key: "functional", label: "Funcionais" },
-    { key: "aesthetic", label: "Esteticos" },
+    { key: "aesthetic", label: "Estéticos" },
     { key: "commercial", label: "Comerciais" },
   ];
 
@@ -233,12 +233,12 @@ function ProductDetail() {
       {!analysis && (
         <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 shadow-sm text-center">
           <Package size={40} className="mx-auto mb-3 text-[#9ca3af] opacity-50" />
-          <p className="text-[#9ca3af] text-sm mb-4">Nenhuma analise cadastrada</p>
+          <p className="text-[#9ca3af] text-sm mb-4">Nenhuma análise cadastrada</p>
           <Link
             href={`/produtos/${productId}/analise`}
             className="inline-flex items-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors"
           >
-            Criar Analise
+            Criar Análise
           </Link>
         </div>
       )}
@@ -253,12 +253,12 @@ function ProductDetail() {
             </h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              <InfoCell label="Preco" value={analysis.price} />
-              <InfoCell label="Preco Original" value={analysis.originalPrice} />
+              <InfoCell label="Preço" value={analysis.price} />
+              <InfoCell label="Preço Original" value={analysis.originalPrice} />
               <InfoCell label="Desconto" value={analysis.discount} />
               <InfoCell label="Frete" value={analysis.shipping} />
               <InfoCell label="Nota" value={analysis.rating} />
-              <InfoCell label="Avaliacoes" value={analysis.reviewCount} />
+              <InfoCell label="Avaliações" value={analysis.reviewCount} />
               <InfoCell label="Vendidos" value={analysis.soldCount} />
               <InfoCell label="Vendedor" value={analysis.seller} />
               <InfoCell label="Material" value={analysis.material} />
@@ -303,12 +303,12 @@ function ProductDetail() {
             )}
           </div>
 
-          {/* ── Recursos e Beneficios ── */}
+          {/* ── Recursos e Benefícios ── */}
           {analysis.features && analysis.features.length > 0 && (
             <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm space-y-4">
               <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2">
                 <Star size={18} />
-                Recursos e Beneficios
+                Recursos e Benefícios
               </h2>
 
               {/* Tabs */}
@@ -354,12 +354,12 @@ function ProductDetail() {
             </div>
           )}
 
-          {/* ── Beneficio Principal ── */}
+          {/* ── Benefício Principal ── */}
           {analysis.mainBenefit && (
             <div className="rounded-2xl bg-white border-2 border-[#fe2c55]/30 p-6 shadow-sm">
               <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2 mb-3">
                 <Target size={18} className="text-[#fe2c55]" />
-                Beneficio Principal
+                Benefício Principal
               </h2>
               <div className="rounded-xl bg-gradient-to-r from-[#fe2c55]/5 to-[#fe2c55]/10 border border-[#fe2c55]/20 p-5">
                 <p className="text-base font-medium text-[#1a1a2e] leading-relaxed">
@@ -369,12 +369,12 @@ function ProductDetail() {
             </div>
           )}
 
-          {/* ── Piramide de Decisao ── */}
+          {/* ── Pirâmide de Decisão ── */}
           {analysis.decisionPyramid && (
             <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm">
               <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2 mb-6">
                 <TrendingUp size={18} />
-                Piramide de Decisao
+                Pirâmide de Decisão
               </h2>
 
               <div className="flex flex-col items-center gap-3">
@@ -406,12 +406,12 @@ function ProductDetail() {
             </div>
           )}
 
-          {/* ── Objecoes ── */}
+          {/* ── Objeções ── */}
           {analysis.objections && analysis.objections.length > 0 && (
             <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm">
               <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2 mb-4">
                 <AlertTriangle size={18} className="text-[#f59e0b]" />
-                Objecoes
+                Objeções
               </h2>
 
               <div className="overflow-x-auto">
@@ -419,7 +419,7 @@ function ProductDetail() {
                   <thead>
                     <tr className="border-b border-[#e8e0d4]">
                       <th className="text-left py-3 px-3 text-[10px] font-semibold uppercase text-[#9ca3af] tracking-wider">
-                        Objecao
+                        Objeção
                       </th>
                       <th className="text-left py-3 px-3 text-[10px] font-semibold uppercase text-[#9ca3af] tracking-wider">
                         Origem
@@ -452,12 +452,12 @@ function ProductDetail() {
             </div>
           )}
 
-          {/* ── Insights Estrategicos ── */}
+          {/* ── Insights Estratégicos ── */}
           {analysis.strategicInsights && analysis.strategicInsights.length > 0 && (
             <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm">
               <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2 mb-4">
                 <Lightbulb size={18} className="text-[#f59e0b]" />
-                Insights Estrategicos
+                Insights Estratégicos
               </h2>
 
               <div className="space-y-3">

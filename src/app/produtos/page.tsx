@@ -137,13 +137,13 @@ export default function ProdutosPage() {
 
           <div>
             <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-              Descricao
+              Descrição
             </label>
             <input
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-              placeholder="Breve descricao do produto"
+              placeholder="Breve descrição do produto"
             />
           </div>
 

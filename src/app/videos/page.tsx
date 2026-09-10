@@ -165,9 +165,9 @@ export default function VideosPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#1a1a2e]">Montar Videos</h1>
+        <h1 className="text-2xl font-bold text-[#1a1a2e]">Montar Vídeos</h1>
         <p className="text-[#9ca3af] text-sm mt-1">
-          Gere combinacoes ou monte manualmente seus videos
+          Gere combinações ou monte manualmente seus vídeos
         </p>
       </div>
 
@@ -197,7 +197,7 @@ export default function VideosPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-              Angulo
+              Ângulo
             </label>
             <select
               value={genAngle}
@@ -282,7 +282,7 @@ export default function VideosPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-              Angulo
+              Ângulo
             </label>
             <select
               value={manAngle}

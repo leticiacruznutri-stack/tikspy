@@ -8,15 +8,17 @@ import {
   Film,
   Calendar,
   Package,
+  MessageCircle,
   X,
   Menu,
 } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Painel", icon: LayoutDashboard },
-  { href: "/conteudo", label: "Conteudo", icon: FileText },
-  { href: "/videos", label: "Montar Videos", icon: Film },
+  { href: "/conteudo", label: "Conteúdo", icon: FileText },
+  { href: "/videos", label: "Montar Vídeos", icon: Film },
   { href: "/agenda", label: "Agenda", icon: Calendar },
+  { href: "/assistente", label: "Assistente IA", icon: MessageCircle },
 ];
 
 export function Sidebar({
@@ -30,7 +32,6 @@ export function Sidebar({
 
   return (
     <>
-      {/* Mobile overlay */}
       {open && (
         <div
           className="fixed inset-0 z-40 bg-black/20 lg:hidden"
@@ -43,7 +44,6 @@ export function Sidebar({
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#e8e0d4]">
           <Link href="/" className="flex items-center gap-2.5" onClick={onClose}>
             <span className="text-xl">{"\uD83C\uDFAC"}</span>
@@ -59,7 +59,6 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {navItems.map((item) => {
             const isActive =
@@ -82,15 +81,13 @@ export function Sidebar({
             );
           })}
 
-          {/* Separator */}
           <div className="my-3 border-t border-[#e8e0d4]" />
 
-          {/* Produtos link */}
           <Link
             href="/produtos"
             onClick={onClose}
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-              pathname === "/produtos"
+              pathname?.startsWith("/produtos")
                 ? "bg-[#1a1a2e] text-white"
                 : "text-[#6b7280] hover:text-[#1a1a2e] hover:bg-[#f5f0ea]"
             }`}

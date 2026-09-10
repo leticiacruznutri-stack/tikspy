@@ -156,7 +156,7 @@ export default function AgendaPage() {
       <div>
         <h1 className="text-2xl font-bold text-[#1a1a2e]">Agenda</h1>
         <p className="text-[#9ca3af] text-sm mt-1">
-          Planeje e organize suas sessoes de gravacao
+          Planeje e organize suas sessões de gravação
         </p>
       </div>
 
@@ -182,7 +182,7 @@ export default function AgendaPage() {
           }`}
         >
           <Film size={16} />
-          Sessoes
+          Sessões
         </button>
       </div>
 
@@ -311,7 +311,7 @@ export default function AgendaPage() {
                 className="mx-auto mb-3 text-[#9ca3af] opacity-50"
               />
               <p className="text-[#9ca3af] text-sm mb-2">
-                Nenhuma sessao agendada
+                Nenhuma sessão agendada
               </p>
               <Link
                 href="/videos"
@@ -353,7 +353,7 @@ export default function AgendaPage() {
                         className="flex items-center gap-1.5 rounded-xl bg-[#22c55e] text-white px-3 py-2 text-xs font-medium hover:bg-[#16a34a] transition-colors"
                       >
                         <CheckCheck size={14} />
-                        Marcar sessao como gravada
+                        Marcar sessão como gravada
                       </button>
                     </div>
 

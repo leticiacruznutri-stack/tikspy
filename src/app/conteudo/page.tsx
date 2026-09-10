@@ -172,7 +172,7 @@ function ConteudoPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1a2e]">Conteudo</h1>
+          <h1 className="text-2xl font-bold text-[#1a1a2e]">Conteúdo</h1>
           <p className="text-[#9ca3af] text-sm mt-1">
             Gerencie hooks, bodies e CTAs de todos os produtos
           </p>
@@ -242,7 +242,7 @@ function ConteudoPage() {
         {/* Angle filter */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-[#9ca3af] uppercase tracking-wider">
-            Angulo:
+            Ângulo:
           </span>
           <button
             onClick={() => setSelectedAngles([])}
@@ -341,7 +341,7 @@ function ConteudoPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-                Angulo
+                Ângulo
               </label>
               <select
                 value={formAngle}
@@ -412,7 +412,7 @@ function ConteudoPage() {
       {filtered.length === 0 ? (
         <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 shadow-sm text-center">
           <p className="text-[#9ca3af] text-sm">
-            Nenhum conteudo encontrado com os filtros atuais
+            Nenhum conteúdo encontrado com os filtros atuais
           </p>
         </div>
       ) : (

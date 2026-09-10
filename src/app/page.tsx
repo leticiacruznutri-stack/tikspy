@@ -69,7 +69,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-[#1a1a2e]">Painel</h1>
         <p className="text-[#9ca3af] text-sm mt-1">
-          Visao geral de todo o seu conteudo TikTok Shop
+          Visão geral de todo o seu conteúdo TikTok Shop
         </p>
       </div>
 
@@ -170,7 +170,7 @@ export default function DashboardPage() {
           {todayByProduct.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-[#9ca3af]">
               <Calendar size={32} className="mb-2 opacity-50" />
-              <p className="text-sm">Nenhum video agendado para hoje</p>
+              <p className="text-sm">Nenhum vídeo agendado para hoje</p>
               <Link
                 href="/videos"
                 className="mt-3 text-sm text-[#1a1a2e] font-medium hover:underline"
@@ -219,7 +219,7 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-[#1a1a2e] mb-4">
-            Acoes Rapidas
+            Ações Rápidas
           </h2>
           <div className="space-y-3">
             <Link
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[#1a1a2e]">
-                    Adicionar Conteudo
+                    Adicionar Conteúdo
                   </p>
                   <p className="text-xs text-[#9ca3af]">
                     Crie novos hooks, bodies e CTAs
@@ -254,10 +254,10 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[#1a1a2e]">
-                    Montar Videos
+                    Montar Vídeos
                   </p>
                   <p className="text-xs text-[#9ca3af]">
-                    Gere combinacoes de conteudo
+                    Gere combinações de conteúdo
                   </p>
                 </div>
               </div>
@@ -279,7 +279,7 @@ export default function DashboardPage() {
                     Ver Agenda
                   </p>
                   <p className="text-xs text-[#9ca3af]">
-                    Visualize sua agenda de gravacao
+                    Visualize sua agenda de gravação
                   </p>
                 </div>
               </div>
