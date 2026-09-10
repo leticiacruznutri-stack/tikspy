@@ -118,19 +118,30 @@ function FeatureCard({ feature }: { feature: ProductFeature }) {
 function VideoAnalysisSection({ content }: { content: string }) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
-  const sections = content.split(/\n\n(?=[A-Z0-9])/).map((block) => {
-    const lines = block.trim().split("\n");
-    const title = lines[0];
-    const body = lines.slice(1).join("\n").trim();
-    return { title, body };
-  }).filter((s) => s.body.length > 0);
+  // Parse sections by ALL-CAPS titles
+  const sections: { title: string; lines: string[] }[] = [];
+  const rawLines = content.split("\n");
+  let current: { title: string; lines: string[] } | null = null;
 
-  const sectionIcons: Record<number, { icon: typeof Video; color: string }> = {
-    0: { icon: TrendingUp, color: "#3b82f6" },
-    1: { icon: Target, color: "#8b5cf6" },
-    2: { icon: Lightbulb, color: "#f59e0b" },
-    3: { icon: Star, color: "#22c55e" },
-  };
+  for (const line of rawLines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    // Detect section headers: all uppercase, at least 10 chars
+    if (trimmed === trimmed.toUpperCase() && trimmed.length >= 10 && /[A-Z]/.test(trimmed)) {
+      if (current) sections.push(current);
+      current = { title: trimmed, lines: [] };
+    } else if (current) {
+      current.lines.push(trimmed);
+    }
+  }
+  if (current && current.lines.length > 0) sections.push(current);
+
+  const sectionConfig: { icon: typeof Video; color: string; label: string }[] = [
+    { icon: TrendingUp, color: "#3b82f6", label: "Formatos que mais vendem" },
+    { icon: Target, color: "#8b5cf6", label: "Padrões de hook visual" },
+    { icon: Lightbulb, color: "#f59e0b", label: "Headlines que mais vendem" },
+    { icon: Star, color: "#22c55e", label: "Ideias de vídeo pra Letícia" },
+  ];
 
   return (
     <div className="space-y-2">
@@ -142,7 +153,7 @@ function VideoAnalysisSection({ content }: { content: string }) {
       </div>
       {sections.map((section, i) => {
         const isExpanded = expandedSection === section.title;
-        const config = sectionIcons[i] || { icon: ChevronRight, color: "#9ca3af" };
+        const config = sectionConfig[i] || { icon: ChevronRight, color: "#9ca3af", label: section.title };
         const Icon = config.icon;
 
         return (
@@ -152,10 +163,10 @@ function VideoAnalysisSection({ content }: { content: string }) {
               className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[#faf8f5] transition-colors"
             >
               <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-opacity-10 shrink-0" style={{ backgroundColor: config.color + "15" }}>
+                <div className="flex h-5 w-5 items-center justify-center rounded shrink-0" style={{ backgroundColor: config.color + "15" }}>
                   <Icon size={11} style={{ color: config.color }} />
                 </div>
-                <span className="text-[12px] font-semibold text-[#1a1a2e]">{section.title}</span>
+                <span className="text-[12px] font-semibold text-[#1a1a2e]">{config.label}</span>
               </div>
               {isExpanded ? (
                 <ChevronUp size={13} className="text-[#c8b99a]" />
@@ -166,36 +177,41 @@ function VideoAnalysisSection({ content }: { content: string }) {
             {isExpanded && (
               <div className="px-3 pb-3 border-t border-[#f0ebe3]">
                 <div className="pt-2 space-y-1.5">
-                  {section.body.split("\n").map((line, j) => {
-                    const trimmed = line.trim();
-                    if (!trimmed) return null;
-
-                    const isNumbered = /^\d+\./.test(trimmed);
-                    const isBullet = trimmed.startsWith("-");
-                    const content = isBullet ? trimmed.slice(1).trim() : trimmed;
+                  {section.lines.map((line, j) => {
+                    const isNumbered = /^\d+\./.test(line);
+                    const isBullet = line.startsWith("-");
+                    const lineContent = isBullet ? line.slice(1).trim() : line;
 
                     if (isNumbered) {
-                      const num = trimmed.match(/^(\d+)\./)?.[1];
-                      const rest = trimmed.replace(/^\d+\.\s*/, "");
-                      const parts = rest.split(" - ");
+                      const num = line.match(/^(\d+)\./)?.[1];
+                      const rest = line.replace(/^\d+\.\s*/, "");
+                      const dashIdx = rest.indexOf(" - ");
+                      const title = dashIdx > -1 ? rest.slice(0, dashIdx) : rest;
+                      const desc = dashIdx > -1 ? rest.slice(dashIdx + 3) : "";
                       return (
                         <div key={j} className="flex items-start gap-2 rounded-lg bg-[#faf8f5] px-2.5 py-2">
-                          <span className="shrink-0 w-4 h-4 rounded-full bg-[#e8e0d4] text-[#6b7280] flex items-center justify-center text-[9px] font-bold mt-0.5">
+                          <span className="shrink-0 w-5 h-5 rounded-full text-white flex items-center justify-center text-[10px] font-bold mt-0.5" style={{ backgroundColor: config.color }}>
                             {num}
                           </span>
                           <div className="flex-1">
-                            <span className="text-[12px] font-medium text-[#1a1a2e]">{parts[0]}</span>
-                            {parts[1] && <p className="text-[11px] text-[#9ca3af] mt-0.5">{parts[1]}</p>}
+                            <span className="text-[12px] font-medium text-[#1a1a2e]">{title}</span>
+                            {desc && <p className="text-[11px] text-[#6b7280] mt-0.5 leading-relaxed">{desc}</p>}
                           </div>
                         </div>
                       );
                     }
 
+                    if (isBullet) {
+                      return (
+                        <div key={j} className="flex items-start gap-2 pl-1 py-0.5">
+                          <span className="text-[#c8b99a] mt-1 shrink-0 text-[8px]">●</span>
+                          <p className="text-[12px] text-[#6b7280] leading-relaxed">{lineContent}</p>
+                        </div>
+                      );
+                    }
+
                     return (
-                      <p key={j} className={`text-[12px] leading-relaxed ${isBullet ? "text-[#6b7280] pl-3 flex items-start gap-1.5" : "text-[#1a1a2e]"}`}>
-                        {isBullet && <span className="text-[#c8b99a] mt-px shrink-0">-</span>}
-                        <span>{content}</span>
-                      </p>
+                      <p key={j} className="text-[12px] text-[#1a1a2e] leading-relaxed">{line}</p>
                     );
                   })}
                 </div>
