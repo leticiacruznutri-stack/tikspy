@@ -14,12 +14,17 @@ import {
   TrendingUp,
   Package,
   ExternalLink,
+  DollarSign,
+  Truck,
+  ShoppingBag,
+  Palette,
+  Ruler,
+  MessageCircle,
 } from "lucide-react";
 import { getProductById, getAnalysis } from "@/lib/store";
 import type { Product } from "@/lib/types";
 import type { ProductAnalysis, ProductFeature } from "@/lib/types";
 
-// ── Category helpers ──
 const CATEGORY_COLORS: Record<string, string> = {
   structural: "#3b82f6",
   functional: "#22c55e",
@@ -35,13 +40,12 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const PYRAMID_LEVELS = [
-  { key: "desire", label: "DESEJO", width: "100%", color: "#fe2c55" },
-  { key: "justification", label: "JUSTIFICATIVA", width: "75%", color: "#f59e0b" },
-  { key: "rationalization", label: "RACIONALIZAÇÃO", width: "50%", color: "#3b82f6" },
-  { key: "conversion", label: "CONVERSÃO", width: "35%", color: "#22c55e" },
+  { key: "desire", label: "Desejo", icon: "❤️", color: "#fe2c55", bg: "#fe2c55" },
+  { key: "justification", label: "Justificativa", icon: "💡", color: "#f59e0b", bg: "#f59e0b" },
+  { key: "rationalization", label: "Racionalização", icon: "🧠", color: "#3b82f6", bg: "#3b82f6" },
+  { key: "conversion", label: "Conversão", icon: "✅", color: "#22c55e", bg: "#22c55e" },
 ];
 
-// ── Feature Card ──
 function FeatureCard({ feature }: { feature: ProductFeature }) {
   const [expanded, setExpanded] = useState(false);
   const catColor = CATEGORY_COLORS[feature.category] || "#6b7280";
@@ -51,23 +55,26 @@ function FeatureCard({ feature }: { feature: ProductFeature }) {
     <div className="rounded-xl border border-[#e8e0d4] bg-white overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-[#FAF7F2]/60 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[#faf8f5] transition-colors"
       >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <span className="text-sm font-semibold text-[#1a1a2e] truncate">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-1 h-4 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
+          <span className="text-[13px] font-medium text-[#1a1a2e] truncate">
             {feature.feature}
           </span>
           <span
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0"
-            style={{ backgroundColor: catColor }}
+            className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+            style={{ backgroundColor: catColor + "15", color: catColor }}
           >
             {catLabel}
           </span>
-          <div className="flex items-center gap-0.5 shrink-0">
+        </div>
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <div className="flex items-center gap-px">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
                 key={i}
-                size={12}
+                size={10}
                 className={
                   i < feature.ranking
                     ? "text-[#f59e0b] fill-[#f59e0b]"
@@ -76,28 +83,28 @@ function FeatureCard({ feature }: { feature: ProductFeature }) {
               />
             ))}
           </div>
+          {expanded ? (
+            <ChevronUp size={14} className="text-[#c8b99a]" />
+          ) : (
+            <ChevronDown size={14} className="text-[#c8b99a]" />
+          )}
         </div>
-        {expanded ? (
-          <ChevronUp size={16} className="text-[#9ca3af] shrink-0 ml-2" />
-        ) : (
-          <ChevronDown size={16} className="text-[#9ca3af] shrink-0 ml-2" />
-        )}
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 space-y-3 border-t border-[#e8e0d4] pt-3">
-          <DetailRow label="Por que" value={feature.why} />
+        <div className="px-3 pb-3 space-y-2 border-t border-[#f0ebe3] pt-2.5">
+          <DetailRow label="Por quê" value={feature.why} />
           <DetailRow label="O que faz" value={feature.whatItDoes} />
           <DetailRow label="Benefício dimensionado" value={feature.dimensioned} />
           <DetailRow
             label="Emoção positiva"
             value={feature.emotionPositive}
-            valueClass="text-green-700"
+            valueClass="text-[#16a34a]"
           />
           <DetailRow
             label="Emoção negativa"
             value={feature.emotionNegative}
-            valueClass="text-red-600"
+            valueClass="text-[#dc2626]"
           />
         </div>
       )}
@@ -116,29 +123,31 @@ function DetailRow({
 }) {
   return (
     <div>
-      <span className="text-[10px] font-semibold uppercase text-[#9ca3af] tracking-wider">
+      <span className="text-[10px] font-semibold uppercase text-[#b8a88a] tracking-wider">
         {label}
       </span>
-      <p className={`text-sm text-[#1a1a2e] mt-0.5 ${valueClass ?? ""}`}>
+      <p className={`text-[13px] text-[#1a1a2e] mt-0.5 leading-relaxed ${valueClass ?? ""}`}>
         {value}
       </p>
     </div>
   );
 }
 
-// ── Info Cell for summary grid ──
-function InfoCell({ label, value }: { label: string; value: string | number | undefined }) {
+function StatCard({ icon: Icon, label, value, accent }: { icon: typeof DollarSign; label: string; value: string | number | undefined; accent?: string }) {
+  if (!value) return null;
   return (
-    <div className="space-y-0.5">
-      <span className="text-[10px] font-semibold uppercase text-[#9ca3af] tracking-wider">
-        {label}
-      </span>
-      <p className="text-sm font-medium text-[#1a1a2e]">{value ?? "—"}</p>
+    <div className="flex items-center gap-2.5 rounded-xl bg-[#faf8f5] px-3 py-2">
+      <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: (accent || "#e8e0d4") + "20" }}>
+        <Icon size={13} style={{ color: accent || "#b8a88a" }} />
+      </div>
+      <div>
+        <p className="text-[11px] text-[#9ca3af]">{label}</p>
+        <p className="text-[13px] font-semibold text-[#1a1a2e]">{value}</p>
+      </div>
     </div>
   );
 }
 
-// ── Main detail component ──
 function ProductDetail() {
   const params = useParams();
   const productId = params.id as string;
@@ -166,16 +175,16 @@ function ProductDetail() {
 
   if (!product) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Link
           href="/produtos"
           className="inline-flex items-center gap-1.5 text-sm text-[#9ca3af] hover:text-[#1a1a2e] transition-colors"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={14} />
           Voltar
         </Link>
-        <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 shadow-sm text-center">
-          <Package size={40} className="mx-auto mb-3 text-[#9ca3af] opacity-50" />
+        <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 text-center">
+          <Package size={32} className="mx-auto mb-3 text-[#c8b99a]" />
           <p className="text-[#9ca3af] text-sm">Produto não encontrado</p>
         </div>
       </div>
@@ -196,142 +205,148 @@ function ProductDetail() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* ── Header ── */}
-      <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm">
+    <div className="space-y-4">
+      {/* Header compacto */}
+      <div>
         <Link
           href="/produtos"
-          className="inline-flex items-center gap-1.5 text-sm text-[#9ca3af] hover:text-[#1a1a2e] transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-sm text-[#9ca3af] hover:text-[#1a1a2e] transition-colors mb-3"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={14} />
           Voltar
         </Link>
 
-        <div className="flex items-start gap-4">
-          <span className="text-4xl">{product.emoji}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">{product.emoji}</span>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-[#1a1a2e]">{product.name}</h1>
+            <h1 className="text-xl font-bold text-[#1a1a2e]">{product.name}</h1>
             {product.description && (
-              <p className="text-sm text-[#9ca3af] mt-1">{product.description}</p>
-            )}
-            {product.shopUrl && (
-              <a
-                href={product.shopUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-[#3b82f6] hover:underline mt-2"
-              >
-                <ExternalLink size={12} />
-                {product.shopUrl}
-              </a>
+              <p className="text-[13px] text-[#9ca3af] mt-0.5">{product.description}</p>
             )}
           </div>
+          {product.shopUrl && (
+            <a
+              href={product.shopUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-lg bg-[#f5f0ea] px-3 py-1.5 text-xs text-[#6b7280] hover:text-[#1a1a2e] transition-colors shrink-0"
+            >
+              <ExternalLink size={12} />
+              Ver na loja
+            </a>
+          )}
         </div>
       </div>
 
-      {/* ── No analysis state ── */}
+      {/* Sem análise */}
       {!analysis && (
-        <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 shadow-sm text-center">
-          <Package size={40} className="mx-auto mb-3 text-[#9ca3af] opacity-50" />
-          <p className="text-[#9ca3af] text-sm mb-4">Nenhuma análise cadastrada</p>
+        <div className="rounded-2xl bg-white border border-[#e8e0d4] p-10 text-center">
+          <Package size={28} className="mx-auto mb-2 text-[#c8b99a]" />
+          <p className="text-[#9ca3af] text-sm mb-3">Nenhuma análise cadastrada</p>
           <Link
             href={`/produtos/${productId}/analise`}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2 text-sm font-medium hover:bg-[#2a2a3e] transition-colors"
           >
-            Criar Análise
+            Criar análise
           </Link>
         </div>
       )}
 
       {analysis && (
         <>
-          {/* ── Ficha do Produto ── */}
-          <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm space-y-5">
-            <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2">
-              <Package size={18} />
-              Ficha do Produto
+          {/* Ficha do produto - grid compacto */}
+          <div className="rounded-2xl bg-white border border-[#e8e0d4] p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2">
+              <Package size={14} className="text-[#b8a88a]" />
+              Ficha do produto
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              <InfoCell label="Preço" value={analysis.price} />
-              <InfoCell label="Preço Original" value={analysis.originalPrice} />
-              <InfoCell label="Desconto" value={analysis.discount} />
-              <InfoCell label="Frete" value={analysis.shipping} />
-              <InfoCell label="Nota" value={analysis.rating} />
-              <InfoCell label="Avaliações" value={analysis.reviewCount} />
-              <InfoCell label="Vendidos" value={analysis.soldCount} />
-              <InfoCell label="Vendedor" value={analysis.seller} />
-              <InfoCell label="Material" value={analysis.material} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              <StatCard icon={DollarSign} label="Preço" value={analysis.price} accent="#22c55e" />
+              <StatCard icon={DollarSign} label="Original" value={analysis.originalPrice} accent="#9ca3af" />
+              <StatCard icon={DollarSign} label="Desconto" value={analysis.discount} accent="#fe2c55" />
+              <StatCard icon={Truck} label="Frete" value={analysis.shipping} accent="#3b82f6" />
+              <StatCard icon={Star} label="Nota" value={analysis.rating} accent="#f59e0b" />
+              <StatCard icon={MessageCircle} label="Avaliações" value={analysis.reviewCount} accent="#f59e0b" />
+              <StatCard icon={ShoppingBag} label="Vendidos" value={analysis.soldCount} accent="#8b5cf6" />
+              <StatCard icon={Package} label="Vendedor" value={analysis.seller} accent="#6b7280" />
             </div>
 
-            {/* Sizes */}
-            {analysis.sizes && analysis.sizes.length > 0 && (
-              <div>
-                <span className="text-[10px] font-semibold uppercase text-[#9ca3af] tracking-wider block mb-2">
-                  Tamanhos
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {analysis.sizes.map((size, i) => (
-                    <span
-                      key={i}
-                      className="text-xs font-medium px-3 py-1 rounded-full bg-[#FAF7F2] border border-[#e8e0d4] text-[#1a1a2e]"
-                    >
-                      {size}
-                    </span>
-                  ))}
+            {/* Material, Tamanhos, Cores - inline */}
+            <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
+              {analysis.material && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold text-[#b8a88a] uppercase">Material</span>
+                  <span className="text-[12px] text-[#1a1a2e]">{analysis.material}</span>
                 </div>
-              </div>
-            )}
-
-            {/* Colors */}
-            {analysis.colors && analysis.colors.length > 0 && (
-              <div>
-                <span className="text-[10px] font-semibold uppercase text-[#9ca3af] tracking-wider block mb-2">
-                  Cores ({analysis.colors.length})
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {analysis.colors.map((color, i) => (
-                    <span
-                      key={i}
-                      className="text-xs font-medium px-3 py-1.5 rounded-full bg-[#1a1a2e] text-white"
-                    >
-                      {color}
-                    </span>
-                  ))}
+              )}
+              {analysis.sizes && analysis.sizes.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Ruler size={11} className="text-[#b8a88a]" />
+                  <div className="flex gap-1">
+                    {analysis.sizes.map((size, i) => (
+                      <span key={i} className="text-[11px] px-1.5 py-0.5 rounded bg-[#f5f0ea] text-[#6b7280]">
+                        {size}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+              {analysis.colors && analysis.colors.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Palette size={11} className="text-[#b8a88a]" />
+                  <div className="flex gap-1">
+                    {analysis.colors.map((color, i) => (
+                      <span key={i} className="text-[11px] px-1.5 py-0.5 rounded bg-[#f5f0ea] text-[#6b7280]">
+                        {color}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* ── Recursos e Benefícios ── */}
+          {/* Benefício principal - destaque */}
+          {analysis.mainBenefit && (
+            <div className="rounded-2xl bg-gradient-to-br from-[#fe2c55]/5 to-[#fe2c55]/10 border border-[#fe2c55]/15 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fe2c55]/10 shrink-0">
+                  <Target size={15} className="text-[#fe2c55]" />
+                </div>
+                <div>
+                  <h2 className="text-[11px] font-bold text-[#fe2c55] uppercase tracking-wider mb-1">
+                    Benefício principal
+                  </h2>
+                  <p className="text-[14px] text-[#1a1a2e] leading-relaxed">
+                    {analysis.mainBenefit}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Recursos e benefícios */}
           {analysis.features && analysis.features.length > 0 && (
-            <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm space-y-4">
-              <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2">
-                <Star size={18} />
-                Recursos e Benefícios
+            <div className="rounded-2xl bg-white border border-[#e8e0d4] p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2">
+                <Star size={14} className="text-[#b8a88a]" />
+                Recursos e benefícios
               </h2>
 
-              {/* Tabs */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab.key;
-                  const tabColor =
-                    tab.key === "all"
-                      ? "#1a1a2e"
-                      : CATEGORY_COLORS[tab.key] || "#1a1a2e";
+                  const tabColor = tab.key === "all" ? "#1a1a2e" : CATEGORY_COLORS[tab.key] || "#1a1a2e";
                   return (
                     <button
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key)}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-full transition-all"
                       style={
                         isActive
-                          ? { backgroundColor: tabColor, color: "#fff" }
-                          : {
-                              backgroundColor: "transparent",
-                              color: "#9ca3af",
-                              border: "1px solid #e8e0d4",
-                            }
+                          ? { backgroundColor: tabColor + "15", color: tabColor }
+                          : { color: "#9ca3af" }
                       }
                     >
                       {tab.label}
@@ -340,13 +355,12 @@ function ProductDetail() {
                 })}
               </div>
 
-              {/* Feature cards */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {filteredFeatures.map((feature) => (
                   <FeatureCard key={feature.id} feature={feature} />
                 ))}
                 {filteredFeatures.length === 0 && (
-                  <p className="text-sm text-[#9ca3af] text-center py-6">
+                  <p className="text-[13px] text-[#9ca3af] text-center py-4">
                     Nenhum recurso nesta categoria
                   </p>
                 )}
@@ -354,51 +368,36 @@ function ProductDetail() {
             </div>
           )}
 
-          {/* ── Benefício Principal ── */}
-          {analysis.mainBenefit && (
-            <div className="rounded-2xl bg-white border-2 border-[#fe2c55]/30 p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2 mb-3">
-                <Target size={18} className="text-[#fe2c55]" />
-                Benefício Principal
-              </h2>
-              <div className="rounded-xl bg-gradient-to-r from-[#fe2c55]/5 to-[#fe2c55]/10 border border-[#fe2c55]/20 p-5">
-                <p className="text-base font-medium text-[#1a1a2e] leading-relaxed">
-                  {analysis.mainBenefit}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ── Pirâmide de Decisão ── */}
+          {/* Pirâmide de decisão - horizontal */}
           {analysis.decisionPyramid && (
-            <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2 mb-6">
-                <TrendingUp size={18} />
-                Pirâmide de Decisão
+            <div className="rounded-2xl bg-white border border-[#e8e0d4] p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2">
+                <TrendingUp size={14} className="text-[#b8a88a]" />
+                Pirâmide de decisão
               </h2>
 
-              <div className="flex flex-col items-center gap-3">
+              <div className="space-y-2">
                 {PYRAMID_LEVELS.map((level) => {
                   const pyramid = analysis.decisionPyramid;
                   const value = pyramid
                     ? pyramid[level.key as keyof typeof pyramid]
                     : undefined;
                   return (
-                    <div
-                      key={level.key}
-                      className="rounded-xl p-4 text-white text-center transition-all"
-                      style={{
-                        width: level.width,
-                        backgroundColor: level.color,
-                        maxWidth: "100%",
-                      }}
-                    >
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 block mb-1">
-                        {level.label}
-                      </span>
-                      <p className="text-sm font-medium leading-snug">
-                        {value || "—"}
-                      </p>
+                    <div key={level.key} className="flex items-start gap-3 rounded-xl bg-[#faf8f5] px-3 py-2.5">
+                      <div
+                        className="flex h-7 w-7 items-center justify-center rounded-lg shrink-0 text-sm"
+                        style={{ backgroundColor: level.color + "15" }}
+                      >
+                        {level.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: level.color }}>
+                          {level.label}
+                        </span>
+                        <p className="text-[13px] text-[#1a1a2e] leading-relaxed mt-0.5">
+                          {value || "-"}
+                        </p>
+                      </div>
                     </div>
                   );
                 })}
@@ -406,70 +405,54 @@ function ProductDetail() {
             </div>
           )}
 
-          {/* ── Objeções ── */}
+          {/* Objeções - cards ao invés de tabela */}
           {analysis.objections && analysis.objections.length > 0 && (
-            <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2 mb-4">
-                <AlertTriangle size={18} className="text-[#f59e0b]" />
+            <div className="rounded-2xl bg-white border border-[#e8e0d4] p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2">
+                <AlertTriangle size={14} className="text-[#f59e0b]" />
                 Objeções
               </h2>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[#e8e0d4]">
-                      <th className="text-left py-3 px-3 text-[10px] font-semibold uppercase text-[#9ca3af] tracking-wider">
-                        Objeção
-                      </th>
-                      <th className="text-left py-3 px-3 text-[10px] font-semibold uppercase text-[#9ca3af] tracking-wider">
-                        Origem
-                      </th>
-                      <th className="text-left py-3 px-3 text-[10px] font-semibold uppercase text-[#9ca3af] tracking-wider">
-                        Tratamento
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analysis.objections.map((obj, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-[#e8e0d4] last:border-b-0 hover:bg-[#FAF7F2]/60"
-                      >
-                        <td className="py-3 px-3 font-medium text-[#1a1a2e]">
-                          {obj.objection}
-                        </td>
-                        <td className="py-3 px-3 text-[#6b7280]">
-                          {obj.source}
-                        </td>
-                        <td className="py-3 px-3 text-[#6b7280]">
-                          {obj.treatment}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-2">
+                {analysis.objections.map((obj, i) => (
+                  <div key={i} className="rounded-xl border border-[#f0ebe3] px-3 py-2.5">
+                    <p className="text-[13px] font-medium text-[#1a1a2e]">
+                      &ldquo;{obj.objection}&rdquo;
+                    </p>
+                    <div className="flex gap-4 mt-1.5">
+                      <div>
+                        <span className="text-[9px] font-semibold text-[#b8a88a] uppercase tracking-wider">Origem</span>
+                        <p className="text-[12px] text-[#6b7280]">{obj.source}</p>
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-[9px] font-semibold text-[#22c55e] uppercase tracking-wider">Tratamento</span>
+                        <p className="text-[12px] text-[#6b7280]">{obj.treatment}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* ── Insights Estratégicos ── */}
+          {/* Insights estratégicos */}
           {analysis.strategicInsights && analysis.strategicInsights.length > 0 && (
-            <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-[#1a1a2e] flex items-center gap-2 mb-4">
-                <Lightbulb size={18} className="text-[#f59e0b]" />
-                Insights Estratégicos
+            <div className="rounded-2xl bg-white border border-[#e8e0d4] p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2">
+                <Lightbulb size={14} className="text-[#f59e0b]" />
+                Insights estratégicos
               </h2>
 
-              <div className="space-y-3">
+              <div className="space-y-1.5">
                 {analysis.strategicInsights.map((insight, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-3 rounded-xl border border-[#e8e0d4] p-4 bg-[#FAF7F2]/40"
+                    className="flex items-start gap-2.5 rounded-xl bg-[#faf8f5] px-3 py-2.5"
                   >
-                    <span className="shrink-0 w-7 h-7 rounded-full bg-[#f59e0b]/10 text-[#f59e0b] flex items-center justify-center text-xs font-bold">
+                    <span className="shrink-0 w-5 h-5 rounded-full bg-[#f59e0b]/10 text-[#f59e0b] flex items-center justify-center text-[10px] font-bold mt-0.5">
                       {i + 1}
                     </span>
-                    <p className="text-sm text-[#1a1a2e] leading-relaxed">
+                    <p className="text-[13px] text-[#1a1a2e] leading-relaxed">
                       {insight}
                     </p>
                   </div>
@@ -483,7 +466,6 @@ function ProductDetail() {
   );
 }
 
-// ── Default export with Suspense wrapper ──
 export default function ProductDetailWrapper() {
   return (
     <Suspense
