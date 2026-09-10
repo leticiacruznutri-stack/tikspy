@@ -99,6 +99,8 @@ function toDbAnalysis(a: ProductAnalysis) {
     decision_pyramid: a.decisionPyramid,
     objections: a.objections,
     strategic_insights: a.strategicInsights,
+    swipe_file_url: a.swipeFileUrl,
+    video_analysis: a.videoAnalysis,
   };
 }
 
@@ -122,6 +124,8 @@ function fromDbAnalysis(row: any): ProductAnalysis {
     decisionPyramid: row.decision_pyramid,
     objections: row.objections,
     strategicInsights: row.strategic_insights,
+    swipeFileUrl: row.swipe_file_url,
+    videoAnalysis: row.video_analysis,
   };
 }
 

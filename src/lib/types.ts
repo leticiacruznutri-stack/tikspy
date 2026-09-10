@@ -91,4 +91,6 @@ export type ProductAnalysis = {
   };
   objections: { objection: string; source: string; treatment: string }[];
   strategicInsights: string[];
+  swipeFileUrl?: string;
+  videoAnalysis?: string;
 };

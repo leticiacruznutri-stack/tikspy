@@ -18,6 +18,9 @@ import {
   Truck,
   ShoppingBag,
   Palette,
+  FolderOpen,
+  Video,
+  ChevronRight,
   Ruler,
   MessageCircle,
 } from "lucide-react";
@@ -465,6 +468,48 @@ function ProductDetail() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Referências */}
+          {(analysis.swipeFileUrl || analysis.videoAnalysis) && (
+            <div className="rounded-2xl bg-white border border-[#e8e0d4] p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2">
+                <FolderOpen size={14} className="text-[#b8a88a]" />
+                Referências
+              </h2>
+
+              {analysis.swipeFileUrl && (
+                <a
+                  href={analysis.swipeFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-xl bg-[#faf8f5] px-4 py-3 hover:bg-[#f5f0ea] transition-colors group"
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#3b82f6]/10 shrink-0">
+                    <Video size={14} className="text-[#3b82f6]" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-medium text-[#1a1a2e]">Swipe File de vídeos</p>
+                    <p className="text-[11px] text-[#9ca3af]">Vídeos de referência dos top sellers</p>
+                  </div>
+                  <ChevronRight size={14} className="text-[#c8b99a] group-hover:text-[#1a1a2e] transition-colors" />
+                </a>
+              )}
+
+              {analysis.videoAnalysis && (
+                <div className="rounded-xl bg-[#faf8f5] px-4 py-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#8b5cf6]/10 shrink-0">
+                      <Lightbulb size={12} className="text-[#8b5cf6]" />
+                    </div>
+                    <p className="text-[13px] font-medium text-[#1a1a2e]">Análise dos vídeos top sellers</p>
+                  </div>
+                  <div className="text-[12px] text-[#6b7280] leading-relaxed whitespace-pre-line pl-8">
+                    {analysis.videoAnalysis}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </>
