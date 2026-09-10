@@ -198,7 +198,15 @@ export default function ProdutosPage() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{product.emoji}</span>
+                    {product.imageUrl ? (
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="w-10 h-10 rounded-lg object-cover border border-[#e8e0d4]"
+                      />
+                    ) : (
+                      <span className="text-3xl">{product.emoji}</span>
+                    )}
                     <div>
                       <h3 className="text-base font-semibold text-[#1a1a2e]">
                         {product.name}
