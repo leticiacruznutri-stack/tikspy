@@ -419,7 +419,7 @@ function ConteudoPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-2.5">
           {filtered.map((piece) => {
             const angle = ANGLES.find((a) => a.id === piece.angle);
             const product = getProduct(piece.productId);
@@ -429,74 +429,77 @@ function ConteudoPage() {
                 key={piece.id}
                 className="rounded-2xl bg-white border border-[#e8e0d4] hover:border-[#c8b99a] transition-all group overflow-hidden"
               >
-                {/* Color accent bar */}
-                <div className="h-1" style={{ backgroundColor: angle?.color }} />
-
-                <div className="p-4 pb-3">
-                  {/* Top row: product + angle + status + actions */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {product && (
-                        <span className="text-xs text-[#9ca3af]">
-                          {product.emoji} {product.name}
-                        </span>
-                      )}
-                      <span
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-                        style={{ backgroundColor: angle?.color + "15", color: angle?.color }}
-                      >
-                        {angle?.emoji} {angle?.label}
+                {/* Header bar */}
+                <div
+                  className="flex items-center justify-between px-4 py-2 border-b border-[#f0ebe3]"
+                  style={{ backgroundColor: angle?.color + "08" }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {product && (
+                      <span className="text-xs text-[#9ca3af]">
+                        {product.emoji} {product.name}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => cycleStatus(piece)}
-                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${STATUS_COLORS[piece.status]}`}
-                        title="Clique para mudar status"
-                      >
-                        {STATUS_LABELS[piece.status]}
-                      </button>
-                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => startEdit(piece)}
-                          className="rounded-lg p-1 text-[#c8b99a] hover:text-[#1a1a2e] transition-colors"
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(piece.id)}
-                          className="rounded-lg p-1 text-[#c8b99a] hover:text-[#fe2c55] transition-colors"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
+                    )}
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                      style={{ backgroundColor: angle?.color + "15", color: angle?.color }}
+                    >
+                      {angle?.emoji} {angle?.label}
+                    </span>
+                    <button
+                      onClick={() => cycleStatus(piece)}
+                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${STATUS_COLORS[piece.status]}`}
+                      title="Clique para mudar status"
+                    >
+                      {STATUS_LABELS[piece.status]}
+                    </button>
                   </div>
-
-                  {/* Hook text - the spoken line, prominent */}
-                  <p className="text-[15px] text-[#1a1a2e] leading-relaxed font-medium">
-                    &ldquo;{piece.text}&rdquo;
-                  </p>
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => startEdit(piece)}
+                      className="rounded-lg p-1.5 text-[#c8b99a] hover:text-[#1a1a2e] transition-colors"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(piece.id)}
+                      className="rounded-lg p-1.5 text-[#c8b99a] hover:text-[#fe2c55] transition-colors"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Visual hook / Scene - visually distinct block */}
-                {piece.visualHook && (
-                  <div className="mx-3 mb-3 rounded-xl bg-[#f5f0ea] px-4 py-3">
-                    <div className="flex items-start gap-2.5">
-                      <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-white/80 shadow-sm">
-                        <Video size={13} className="text-[#b8a88a]" />
-                      </div>
-                      <div className="flex-1">
+                {/* Script body */}
+                <div className={`flex ${piece.visualHook ? "divide-x divide-[#f0ebe3]" : ""}`}>
+                  {/* Fala - left/main column */}
+                  <div className={`p-4 ${piece.visualHook ? "flex-1" : "w-full"}`}>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Megaphone size={12} className="text-[#c8b99a]" />
+                      <span className="text-[10px] font-bold text-[#c8b99a] uppercase tracking-widest">
+                        {activeTab === "hook" ? "Fala" : activeTab === "body" ? "Roteiro" : "Chamada"}
+                      </span>
+                    </div>
+                    <p className="text-[15px] text-[#1a1a2e] leading-relaxed">
+                      &ldquo;{piece.text}&rdquo;
+                    </p>
+                  </div>
+
+                  {/* Take Visual - right column */}
+                  {piece.visualHook && (
+                    <div className="flex-1 p-4 bg-[#faf8f5]">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Video size={12} className="text-[#b8a88a]" />
                         <span className="text-[10px] font-bold text-[#b8a88a] uppercase tracking-widest">
                           Take Visual
                         </span>
-                        <p className="text-[13px] text-[#5a5145] leading-relaxed mt-0.5">
-                          {piece.visualHook}
-                        </p>
                       </div>
+                      <p className="text-[13px] text-[#6b7280] leading-relaxed">
+                        {piece.visualHook}
+                      </p>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })}
