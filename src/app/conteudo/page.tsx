@@ -419,7 +419,7 @@ function ConteudoPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((piece) => {
             const angle = ANGLES.find((a) => a.id === piece.angle);
             const product = getProduct(piece.productId);
@@ -427,79 +427,59 @@ function ConteudoPage() {
             return (
               <div
                 key={piece.id}
-                className="rounded-2xl bg-white border border-[#e8e0d4] hover:border-[#c8b99a] transition-all group overflow-hidden"
+                className="rounded-xl bg-white border border-[#e8e0d4] hover:border-[#c8b99a] transition-all group overflow-hidden flex flex-col"
               >
-                {/* Header bar */}
-                <div
-                  className="flex items-center justify-between px-4 py-2 border-b border-[#f0ebe3]"
-                  style={{ backgroundColor: angle?.color + "08" }}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {product && (
-                      <span className="text-xs text-[#9ca3af]">
-                        {product.emoji} {product.name}
-                      </span>
-                    )}
+                {/* Header */}
+                <div className="flex items-center justify-between px-3 py-2 border-b border-[#f0ebe3]">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <span
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0"
                       style={{ backgroundColor: angle?.color + "15", color: angle?.color }}
                     >
                       {angle?.emoji} {angle?.label}
                     </span>
                     <button
                       onClick={() => cycleStatus(piece)}
-                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${STATUS_COLORS[piece.status]}`}
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 ${STATUS_COLORS[piece.status]}`}
                       title="Clique para mudar status"
                     >
                       {STATUS_LABELS[piece.status]}
                     </button>
                   </div>
-                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <button
                       onClick={() => startEdit(piece)}
-                      className="rounded-lg p-1.5 text-[#c8b99a] hover:text-[#1a1a2e] transition-colors"
+                      className="rounded p-1 text-[#c8b99a] hover:text-[#1a1a2e]"
                     >
-                      <Pencil size={13} />
+                      <Pencil size={12} />
                     </button>
                     <button
                       onClick={() => handleDelete(piece.id)}
-                      className="rounded-lg p-1.5 text-[#c8b99a] hover:text-[#fe2c55] transition-colors"
+                      className="rounded p-1 text-[#c8b99a] hover:text-[#fe2c55]"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
 
-                {/* Script body */}
-                <div className={`flex ${piece.visualHook ? "divide-x divide-[#f0ebe3]" : ""}`}>
-                  {/* Fala - left/main column */}
-                  <div className={`p-4 ${piece.visualHook ? "flex-1" : "w-full"}`}>
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Megaphone size={12} className="text-[#c8b99a]" />
-                      <span className="text-[10px] font-bold text-[#c8b99a] uppercase tracking-widest">
-                        {activeTab === "hook" ? "Fala" : activeTab === "body" ? "Roteiro" : "Chamada"}
-                      </span>
-                    </div>
-                    <p className="text-[15px] text-[#1a1a2e] leading-relaxed">
-                      &ldquo;{piece.text}&rdquo;
-                    </p>
-                  </div>
+                {/* Fala */}
+                <div className="px-3 py-2.5 flex-1">
+                  <p className="text-[13px] text-[#1a1a2e] leading-snug">
+                    &ldquo;{piece.text}&rdquo;
+                  </p>
+                </div>
 
-                  {/* Take Visual - right column */}
-                  {piece.visualHook && (
-                    <div className="flex-1 p-4 bg-[#faf8f5]">
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <Video size={12} className="text-[#b8a88a]" />
-                        <span className="text-[10px] font-bold text-[#b8a88a] uppercase tracking-widest">
-                          Take Visual
-                        </span>
-                      </div>
-                      <p className="text-[13px] text-[#6b7280] leading-relaxed">
+                {/* Take Visual */}
+                {piece.visualHook && (
+                  <div className="px-3 py-2 bg-[#faf8f5] border-t border-[#f0ebe3]">
+                    <div className="flex items-start gap-1.5">
+                      <Video size={11} className="text-[#b8a88a] mt-0.5 shrink-0" />
+                      <p className="text-[11px] text-[#9ca3af] leading-snug">
                         {piece.visualHook}
                       </p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}
