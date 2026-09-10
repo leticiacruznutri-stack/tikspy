@@ -115,6 +115,99 @@ function FeatureCard({ feature }: { feature: ProductFeature }) {
   );
 }
 
+function VideoAnalysisSection({ content }: { content: string }) {
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+  const sections = content.split(/\n\n(?=[A-Z0-9])/).map((block) => {
+    const lines = block.trim().split("\n");
+    const title = lines[0];
+    const body = lines.slice(1).join("\n").trim();
+    return { title, body };
+  }).filter((s) => s.body.length > 0);
+
+  const sectionIcons: Record<number, { icon: typeof Video; color: string }> = {
+    0: { icon: TrendingUp, color: "#3b82f6" },
+    1: { icon: Target, color: "#8b5cf6" },
+    2: { icon: Lightbulb, color: "#f59e0b" },
+    3: { icon: Star, color: "#22c55e" },
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 mb-1">
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#8b5cf6]/10 shrink-0">
+          <Video size={12} className="text-[#8b5cf6]" />
+        </div>
+        <p className="text-[13px] font-medium text-[#1a1a2e]">Análise dos vídeos top sellers</p>
+      </div>
+      {sections.map((section, i) => {
+        const isExpanded = expandedSection === section.title;
+        const config = sectionIcons[i] || { icon: ChevronRight, color: "#9ca3af" };
+        const Icon = config.icon;
+
+        return (
+          <div key={i} className="rounded-xl border border-[#f0ebe3] overflow-hidden">
+            <button
+              onClick={() => setExpandedSection(isExpanded ? null : section.title)}
+              className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[#faf8f5] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex h-5 w-5 items-center justify-center rounded bg-opacity-10 shrink-0" style={{ backgroundColor: config.color + "15" }}>
+                  <Icon size={11} style={{ color: config.color }} />
+                </div>
+                <span className="text-[12px] font-semibold text-[#1a1a2e]">{section.title}</span>
+              </div>
+              {isExpanded ? (
+                <ChevronUp size={13} className="text-[#c8b99a]" />
+              ) : (
+                <ChevronDown size={13} className="text-[#c8b99a]" />
+              )}
+            </button>
+            {isExpanded && (
+              <div className="px-3 pb-3 border-t border-[#f0ebe3]">
+                <div className="pt-2 space-y-1.5">
+                  {section.body.split("\n").map((line, j) => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return null;
+
+                    const isNumbered = /^\d+\./.test(trimmed);
+                    const isBullet = trimmed.startsWith("-");
+                    const content = isBullet ? trimmed.slice(1).trim() : trimmed;
+
+                    if (isNumbered) {
+                      const num = trimmed.match(/^(\d+)\./)?.[1];
+                      const rest = trimmed.replace(/^\d+\.\s*/, "");
+                      const parts = rest.split(" - ");
+                      return (
+                        <div key={j} className="flex items-start gap-2 rounded-lg bg-[#faf8f5] px-2.5 py-2">
+                          <span className="shrink-0 w-4 h-4 rounded-full bg-[#e8e0d4] text-[#6b7280] flex items-center justify-center text-[9px] font-bold mt-0.5">
+                            {num}
+                          </span>
+                          <div className="flex-1">
+                            <span className="text-[12px] font-medium text-[#1a1a2e]">{parts[0]}</span>
+                            {parts[1] && <p className="text-[11px] text-[#9ca3af] mt-0.5">{parts[1]}</p>}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <p key={j} className={`text-[12px] leading-relaxed ${isBullet ? "text-[#6b7280] pl-3 flex items-start gap-1.5" : "text-[#1a1a2e]"}`}>
+                        {isBullet && <span className="text-[#c8b99a] mt-px shrink-0">-</span>}
+                        <span>{content}</span>
+                      </p>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function DetailRow({
   label,
   value,
@@ -498,17 +591,7 @@ function ProductDetail() {
               )}
 
               {analysis.videoAnalysis && (
-                <div className="rounded-xl bg-[#faf8f5] px-4 py-3 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#8b5cf6]/10 shrink-0">
-                      <Lightbulb size={12} className="text-[#8b5cf6]" />
-                    </div>
-                    <p className="text-[13px] font-medium text-[#1a1a2e]">Análise dos vídeos top sellers</p>
-                  </div>
-                  <div className="text-[12px] text-[#6b7280] leading-relaxed whitespace-pre-line pl-8">
-                    {analysis.videoAnalysis}
-                  </div>
-                </div>
+                <VideoAnalysisSection content={analysis.videoAnalysis} />
               )}
             </div>
           )}
