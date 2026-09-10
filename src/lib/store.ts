@@ -283,9 +283,14 @@ export async function deleteCombo(id: string): Promise<boolean> {
 }
 
 export async function generateCombos(angle: Angle, count: number, productId: string): Promise<VideoCombo[]> {
-  const hooks = await getPiecesByAngle(angle, 'hook', productId);
-  const bodies = await getPiecesByAngle(angle, 'body', productId);
-  const ctas = await getPiecesByAngle(angle, 'cta', productId);
+  const allHooks = await getPiecesByAngle(angle, 'hook', productId);
+  const allBodies = await getPiecesByAngle(angle, 'body', productId);
+  const allCtas = await getPiecesByAngle(angle, 'cta', productId);
+
+  // Só usar peças que já foram gravadas
+  const hooks = allHooks.filter(p => p.status === 'filmed');
+  const bodies = allBodies.filter(p => p.status === 'filmed');
+  const ctas = allCtas.filter(p => p.status === 'filmed');
 
   if (hooks.length === 0 || bodies.length === 0 || ctas.length === 0) {
     return [];
