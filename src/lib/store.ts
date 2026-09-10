@@ -101,6 +101,7 @@ function toDbAnalysis(a: ProductAnalysis) {
     strategic_insights: a.strategicInsights,
     swipe_file_url: a.swipeFileUrl,
     video_analysis: a.videoAnalysis,
+    reference_hooks: a.referenceHooks,
   };
 }
 
@@ -126,6 +127,7 @@ function fromDbAnalysis(row: any): ProductAnalysis {
     strategicInsights: row.strategic_insights,
     swipeFileUrl: row.swipe_file_url,
     videoAnalysis: row.video_analysis,
+    referenceHooks: row.reference_hooks,
   };
 }
 

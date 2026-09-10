@@ -93,4 +93,5 @@ export type ProductAnalysis = {
   strategicInsights: string[];
   swipeFileUrl?: string;
   videoAnalysis?: string;
+  referenceHooks?: { headline: string; visualHook: string }[];
 };
