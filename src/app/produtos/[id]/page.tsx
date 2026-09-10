@@ -217,7 +217,15 @@ function ProductDetail() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{product.emoji}</span>
+          {product.imageUrl ? (
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-14 h-14 rounded-xl object-cover border border-[#e8e0d4]"
+            />
+          ) : (
+            <span className="text-3xl">{product.emoji}</span>
+          )}
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-[#1a1a2e]">{product.name}</h1>
             {product.description && (
@@ -295,13 +303,9 @@ function ProductDetail() {
               {analysis.colors && analysis.colors.length > 0 && (
                 <div className="flex items-center gap-1.5">
                   <Palette size={11} className="text-[#b8a88a]" />
-                  <div className="flex gap-1">
-                    {analysis.colors.map((color, i) => (
-                      <span key={i} className="text-[11px] px-1.5 py-0.5 rounded bg-[#f5f0ea] text-[#6b7280]">
-                        {color}
-                      </span>
-                    ))}
-                  </div>
+                  <span className="text-[12px] text-[#6b7280]">
+                    {analysis.colors.join(", ")}
+                  </span>
                 </div>
               )}
             </div>
@@ -368,7 +372,7 @@ function ProductDetail() {
             </div>
           )}
 
-          {/* Pirâmide de decisão - horizontal */}
+          {/* Pirâmide de decisão */}
           {analysis.decisionPyramid && (
             <div className="rounded-2xl bg-white border border-[#e8e0d4] p-4 space-y-3">
               <h2 className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2">
@@ -376,28 +380,31 @@ function ProductDetail() {
                 Pirâmide de decisão
               </h2>
 
-              <div className="space-y-2">
-                {PYRAMID_LEVELS.map((level) => {
+              <div className="flex flex-col items-center gap-1.5 py-2">
+                {PYRAMID_LEVELS.map((level, idx) => {
                   const pyramid = analysis.decisionPyramid;
                   const value = pyramid
                     ? pyramid[level.key as keyof typeof pyramid]
                     : undefined;
+                  const widths = ["40%", "60%", "80%", "100%"];
                   return (
-                    <div key={level.key} className="flex items-start gap-3 rounded-xl bg-[#faf8f5] px-3 py-2.5">
-                      <div
-                        className="flex h-7 w-7 items-center justify-center rounded-lg shrink-0 text-sm"
-                        style={{ backgroundColor: level.color + "15" }}
-                      >
-                        {level.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: level.color }}>
-                          {level.label}
-                        </span>
-                        <p className="text-[13px] text-[#1a1a2e] leading-relaxed mt-0.5">
-                          {value || "-"}
-                        </p>
-                      </div>
+                    <div
+                      key={level.key}
+                      className="rounded-xl px-4 py-2.5 text-center"
+                      style={{
+                        width: widths[idx],
+                        minWidth: "200px",
+                        maxWidth: "100%",
+                        backgroundColor: level.color + "12",
+                        borderLeft: `3px solid ${level.color}`,
+                      }}
+                    >
+                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: level.color }}>
+                        {level.icon} {level.label}
+                      </span>
+                      <p className="text-[12px] text-[#1a1a2e] leading-relaxed mt-0.5">
+                        {value || "-"}
+                      </p>
                     </div>
                   );
                 })}
