@@ -13,7 +13,6 @@ import {
 import {
   getSchedule,
   getSessionsForDate,
-  getProductById,
   updateCombo,
   getHooks,
   getBodies,
@@ -52,12 +51,18 @@ export default function AgendaPage() {
   const [checkedCombos, setCheckedCombos] = useState<Set<string>>(new Set());
   const [, setTick] = useState(0);
 
-  const getPieceText = useCallback((id: string): string => {
-    const allPieces = [...getHooks(), ...getBodies(), ...getCTAs()];
-    return allPieces.find((p) => p.id === id)?.text || "...";
+  const [allPiecesCache, setAllPiecesCache] = useState<import("@/lib/types").ContentPiece[]>([]);
+
+  const loadPieces = useCallback(async () => {
+    const [h, b, c] = await Promise.all([getHooks(), getBodies(), getCTAs()]);
+    setAllPiecesCache([...h, ...b, ...c]);
   }, []);
 
-  const loadWeek = useCallback(() => {
+  const getPieceText = useCallback((id: string): string => {
+    return allPiecesCache.find((p) => p.id === id)?.text || "...";
+  }, [allPiecesCache]);
+
+  const loadWeek = useCallback(async () => {
     const days = [];
     for (let i = 0; i < 5; i++) {
       const date = new Date(weekStart);
@@ -66,15 +71,19 @@ export default function AgendaPage() {
       days.push({
         date,
         dateStr,
-        combos: getSchedule(dateStr),
+        combos: await getSchedule(dateStr),
       });
     }
     setWeekData(days);
   }, [weekStart]);
 
-  const loadSessions = useCallback(() => {
-    setSessions(getSessionsForDate(sessionDate));
+  const loadSessions = useCallback(async () => {
+    setSessions(await getSessionsForDate(sessionDate));
   }, [sessionDate]);
+
+  useEffect(() => {
+    loadPieces();
+  }, [loadPieces]);
 
   useEffect(() => {
     loadWeek();
@@ -98,26 +107,46 @@ export default function AgendaPage() {
 
   const todayStr = formatDateISO(new Date());
 
-  const markSessionFilmed = (session: GravacaoSession) => {
+  // Products cache for rendering
+  const [productsCache, setProductsCache] = useState<Map<string, import("@/lib/types").Product>>(new Map());
+
+  useEffect(() => {
+    (async () => {
+      const { getProducts } = await import("@/lib/store");
+      const prods = await getProducts();
+      const map = new Map<string, import("@/lib/types").Product>();
+      for (const p of prods) map.set(p.id, p);
+      setProductsCache(map);
+    })();
+  }, []);
+
+  const getProductByIdCached = (id: string) => productsCache.get(id);
+
+  const markSessionFilmed = async (session: GravacaoSession) => {
     for (const combo of session.combos) {
-      updateCombo(combo.id, { status: "filming" });
+      await updateCombo(combo.id, { status: "filming" });
     }
     loadSessions();
     setTick((t) => t + 1);
   };
 
-  const toggleComboCheck = (comboId: string) => {
-    setCheckedCombos((prev) => {
-      const next = new Set(prev);
-      if (next.has(comboId)) {
+  const toggleComboCheck = async (comboId: string) => {
+    const isChecked = checkedCombos.has(comboId);
+    if (isChecked) {
+      await updateCombo(comboId, { status: "planned" });
+      setCheckedCombos((prev) => {
+        const next = new Set(prev);
         next.delete(comboId);
-        updateCombo(comboId, { status: "planned" });
-      } else {
+        return next;
+      });
+    } else {
+      await updateCombo(comboId, { status: "filming" });
+      setCheckedCombos((prev) => {
+        const next = new Set(prev);
         next.add(comboId);
-        updateCombo(comboId, { status: "filming" });
-      }
-      return next;
-    });
+        return next;
+      });
+    }
     loadSessions();
   };
 
@@ -224,7 +253,7 @@ export default function AgendaPage() {
                   ) : (
                     <div className="space-y-1.5">
                       {combos.slice(0, 5).map((combo) => {
-                        const product = getProductById(combo.productId);
+                        const product = getProductByIdCached(combo.productId);
                         const angle = ANGLES.find(
                           (a) => a.id === combo.angle
                         );
@@ -294,7 +323,7 @@ export default function AgendaPage() {
           ) : (
             <div className="space-y-4">
               {sessions.map((session, idx) => {
-                const product = getProductById(session.productId);
+                const product = getProductByIdCached(session.productId);
                 const angle = ANGLES.find((a) => a.id === session.angle);
 
                 return (

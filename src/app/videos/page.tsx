@@ -5,14 +5,12 @@ import {
   Shuffle,
   Trash2,
   Calendar,
-  Check,
   Zap,
   FileText,
   Megaphone,
 } from "lucide-react";
 import {
   getProducts,
-  getProductById,
   getHooks,
   getBodies,
   getCTAs,
@@ -62,10 +60,15 @@ export default function VideosPage() {
   // Combo filter
   const [filterProduct, setFilterProduct] = useState<string>("");
 
-  const reload = useCallback(() => {
-    const allProducts = getProducts();
+  // Generator piece counts
+  const [genHookCount, setGenHookCount] = useState(0);
+  const [genBodyCount, setGenBodyCount] = useState(0);
+  const [genCtaCount, setGenCtaCount] = useState(0);
+
+  const reload = useCallback(async () => {
+    const allProducts = await getProducts();
     setProducts(allProducts);
-    setCombos(getCombos());
+    setCombos(await getCombos());
     if (!genProduct && allProducts.length > 0) setGenProduct(allProducts[0].id);
     if (!manProduct && allProducts.length > 0) setManProduct(allProducts[0].id);
   }, [genProduct, manProduct]);
@@ -77,34 +80,40 @@ export default function VideosPage() {
   // Update manual columns when product/angle change
   useEffect(() => {
     if (!manProduct) return;
-    setManHooks(getPiecesByAngle(manAngle, "hook", manProduct));
-    setManBodies(getPiecesByAngle(manAngle, "body", manProduct));
-    setManCtas(getPiecesByAngle(manAngle, "cta", manProduct));
-    setSelectedHook(null);
-    setSelectedBody(null);
-    setSelectedCta(null);
+    (async () => {
+      setManHooks(await getPiecesByAngle(manAngle, "hook", manProduct));
+      setManBodies(await getPiecesByAngle(manAngle, "body", manProduct));
+      setManCtas(await getPiecesByAngle(manAngle, "cta", manProduct));
+      setSelectedHook(null);
+      setSelectedBody(null);
+      setSelectedCta(null);
+    })();
   }, [manProduct, manAngle]);
 
   // Available counts for generator
-  const genHookCount = genProduct
-    ? getPiecesByAngle(genAngle, "hook", genProduct).length
-    : 0;
-  const genBodyCount = genProduct
-    ? getPiecesByAngle(genAngle, "body", genProduct).length
-    : 0;
-  const genCtaCount = genProduct
-    ? getPiecesByAngle(genAngle, "cta", genProduct).length
-    : 0;
+  useEffect(() => {
+    if (!genProduct) {
+      setGenHookCount(0);
+      setGenBodyCount(0);
+      setGenCtaCount(0);
+      return;
+    }
+    (async () => {
+      setGenHookCount((await getPiecesByAngle(genAngle, "hook", genProduct)).length);
+      setGenBodyCount((await getPiecesByAngle(genAngle, "body", genProduct)).length);
+      setGenCtaCount((await getPiecesByAngle(genAngle, "cta", genProduct)).length);
+    })();
+  }, [genProduct, genAngle]);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!genProduct) return;
-    generateCombos(genAngle, genCount, genProduct);
+    await generateCombos(genAngle, genCount, genProduct);
     reload();
   };
 
-  const handleManualCreate = () => {
+  const handleManualCreate = async () => {
     if (!manProduct || !selectedHook || !selectedBody || !selectedCta) return;
-    addCombo({
+    await addCombo({
       productId: manProduct,
       hookId: selectedHook,
       bodyId: selectedBody,
@@ -118,18 +127,18 @@ export default function VideosPage() {
     reload();
   };
 
-  const handleDeleteCombo = (id: string) => {
-    deleteCombo(id);
+  const handleDeleteCombo = async (id: string) => {
+    await deleteCombo(id);
     reload();
   };
 
-  const handleScheduleDate = (id: string, date: string) => {
-    updateCombo(id, { scheduledDate: date });
+  const handleScheduleDate = async (id: string, date: string) => {
+    await updateCombo(id, { scheduledDate: date });
     reload();
   };
 
-  const handleStatusChange = (id: string, status: VideoCombo["status"]) => {
-    updateCombo(id, { status });
+  const handleStatusChange = async (id: string, status: VideoCombo["status"]) => {
+    await updateCombo(id, { status });
     reload();
   };
 
@@ -137,13 +146,18 @@ export default function VideosPage() {
     ? combos.filter((c) => c.productId === filterProduct)
     : combos;
 
+  // Cache all pieces for text lookup
+  const [allPiecesCache, setAllPiecesCache] = useState<ContentPiece[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const [h, b, c] = await Promise.all([getHooks(), getBodies(), getCTAs()]);
+      setAllPiecesCache([...h, ...b, ...c]);
+    })();
+  }, [combos]);
+
   const getPieceText = (id: string): string => {
-    const allHooks = getHooks();
-    const allBodies = getBodies();
-    const allCtas = getCTAs();
-    const piece = [...allHooks, ...allBodies, ...allCtas].find(
-      (p) => p.id === id
-    );
+    const piece = allPiecesCache.find((p) => p.id === id);
     return piece?.text || "...";
   };
 
@@ -448,7 +462,7 @@ export default function VideosPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filteredCombos.map((combo) => {
-              const product = getProductById(combo.productId);
+              const product = products.find((p) => p.id === combo.productId);
               const angle = ANGLES.find((a) => a.id === combo.angle);
 
               return (

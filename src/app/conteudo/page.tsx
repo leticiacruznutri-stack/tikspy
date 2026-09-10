@@ -78,9 +78,9 @@ function ConteudoPage() {
   const [formText, setFormText] = useState("");
   const [formVisualHook, setFormVisualHook] = useState("");
 
-  const reload = useCallback(() => {
-    setProducts(getProducts());
-    setPieces(getAllPieces());
+  const reload = useCallback(async () => {
+    setProducts(await getProducts());
+    setPieces(await getAllPieces());
   }, []);
 
   useEffect(() => {
@@ -110,25 +110,25 @@ function ConteudoPage() {
     );
   };
 
-  const cycleStatus = (piece: ContentPiece) => {
+  const cycleStatus = async (piece: ContentPiece) => {
     const currentIdx = STATUS_CYCLE.indexOf(piece.status);
     const nextStatus = STATUS_CYCLE[(currentIdx + 1) % STATUS_CYCLE.length];
-    updatePiece(piece.id, { status: nextStatus });
+    await updatePiece(piece.id, { status: nextStatus });
     reload();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formProduct || !formText.trim()) return;
 
     if (editingId) {
-      updatePiece(editingId, {
+      await updatePiece(editingId, {
         productId: formProduct,
         angle: formAngle,
         text: formText.trim(),
         visualHook: activeTab === "hook" ? formVisualHook.trim() || undefined : undefined,
       });
     } else {
-      addPiece({
+      await addPiece({
         productId: formProduct,
         type: activeTab,
         angle: formAngle,
@@ -151,8 +151,8 @@ function ConteudoPage() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    deletePiece(id);
+  const handleDelete = async (id: string) => {
+    await deletePiece(id);
     reload();
   };
 

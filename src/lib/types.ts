@@ -13,6 +13,7 @@ export type Product = {
   emoji: string;
   description: string;
   shopUrl?: string;
+  imageUrl?: string;
   createdAt: string;
 };
 

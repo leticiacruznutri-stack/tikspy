@@ -8,14 +8,13 @@ import {
   addProduct,
   updateProduct,
   deleteProduct,
-  getHooks,
-  getBodies,
-  getCTAs,
+  getAllPieces,
 } from "@/lib/store";
-import type { Product } from "@/lib/types";
+import type { ContentPiece, Product } from "@/lib/types";
 
 export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [allPieces, setAllPieces] = useState<ContentPiece[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -25,26 +24,27 @@ export default function ProdutosPage() {
   const [formDescription, setFormDescription] = useState("");
   const [formShopUrl, setFormShopUrl] = useState("");
 
-  const reload = useCallback(() => {
-    setProducts(getProducts());
+  const reload = useCallback(async () => {
+    setProducts(await getProducts());
+    setAllPieces(await getAllPieces());
   }, []);
 
   useEffect(() => {
     reload();
   }, [reload]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formName.trim()) return;
 
     if (editingId) {
-      updateProduct(editingId, {
+      await updateProduct(editingId, {
         name: formName.trim(),
         emoji: formEmoji || "\uD83D\uDCE6",
         description: formDescription.trim(),
         shopUrl: formShopUrl.trim() || undefined,
       });
     } else {
-      addProduct({
+      await addProduct({
         name: formName.trim(),
         emoji: formEmoji || "\uD83D\uDCE6",
         description: formDescription.trim(),
@@ -65,8 +65,8 @@ export default function ProdutosPage() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    deleteProduct(id);
+  const handleDelete = async (id: string) => {
+    await deleteProduct(id);
     reload();
   };
 
@@ -186,9 +186,9 @@ export default function ProdutosPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.map((product) => {
-            const hookCount = getHooks(product.id).length;
-            const bodyCount = getBodies(product.id).length;
-            const ctaCount = getCTAs(product.id).length;
+            const hookCount = allPieces.filter((p) => p.productId === product.id && p.type === 'hook').length;
+            const bodyCount = allPieces.filter((p) => p.productId === product.id && p.type === 'body').length;
+            const ctaCount = allPieces.filter((p) => p.productId === product.id && p.type === 'cta').length;
 
             return (
               <Link

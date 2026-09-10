@@ -1,227 +1,291 @@
+import { supabase } from './supabase';
 import type { Angle, ContentPiece, GravacaoSession, Product, ProductAnalysis, VideoCombo } from './types';
-import { INITIAL_ANALYSES, INITIAL_HOOKS, INITIAL_PRODUCTS } from './initial-data';
 
-// ── localStorage keys ──
-const PIECES_KEY = 'tikspy:pieces';
-const COMBOS_KEY = 'tikspy:combos';
-const PRODUCTS_KEY = 'tikspy:products';
+// ── Mapping helpers ──
 
-// ── SSR guard ──
-function isBrowser(): boolean {
-  return typeof window !== 'undefined';
-}
-
-// ── Internal helpers ──
-function uid(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  // Fallback
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-}
-
-function readProducts(): Product[] {
-  if (!isBrowser()) return [];
-  const raw = localStorage.getItem(PRODUCTS_KEY);
-  if (!raw) {
-    // Seed with initial products on first access
-    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(INITIAL_PRODUCTS));
-    return INITIAL_PRODUCTS;
-  }
-  return JSON.parse(raw) as Product[];
-}
-
-function writeProducts(products: Product[]): void {
-  if (!isBrowser()) return;
-  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-}
-
-function readPieces(): ContentPiece[] {
-  if (!isBrowser()) return [];
-  const raw = localStorage.getItem(PIECES_KEY);
-  if (!raw) {
-    // Seed with initial hooks on first access
-    localStorage.setItem(PIECES_KEY, JSON.stringify(INITIAL_HOOKS));
-    return INITIAL_HOOKS;
-  }
-  const pieces = JSON.parse(raw) as ContentPiece[];
-  // Migrate: if pieces exist but have no productId, replace with fresh initial data
-  if (pieces.length > 0 && !pieces[0].productId) {
-    localStorage.setItem(PIECES_KEY, JSON.stringify(INITIAL_HOOKS));
-    return INITIAL_HOOKS;
-  }
-  return pieces;
-}
-
-function writePieces(pieces: ContentPiece[]): void {
-  if (!isBrowser()) return;
-  localStorage.setItem(PIECES_KEY, JSON.stringify(pieces));
-}
-
-function readCombos(): VideoCombo[] {
-  if (!isBrowser()) return [];
-  const raw = localStorage.getItem(COMBOS_KEY);
-  if (!raw) return [];
-  return JSON.parse(raw) as VideoCombo[];
-}
-
-function writeCombos(combos: VideoCombo[]): void {
-  if (!isBrowser()) return;
-  localStorage.setItem(COMBOS_KEY, JSON.stringify(combos));
-}
-
-// ── Product queries ──
-export function getProducts(): Product[] {
-  return readProducts();
-}
-
-export function getProductById(id: string): Product | undefined {
-  return readProducts().find((p) => p.id === id);
-}
-
-// ── Product CRUD ──
-export function addProduct(product: Omit<Product, 'id' | 'createdAt'>): Product {
-  const products = readProducts();
-  const newProduct: Product = {
-    ...product,
-    id: uid(),
-    createdAt: new Date().toISOString().slice(0, 10),
+function toDbProduct(p: Partial<Product> & { name?: string }) {
+  return {
+    ...(p.id !== undefined && { id: p.id }),
+    ...(p.name !== undefined && { name: p.name }),
+    ...(p.emoji !== undefined && { emoji: p.emoji }),
+    ...(p.description !== undefined && { description: p.description }),
+    ...(p.shopUrl !== undefined && { shop_url: p.shopUrl }),
+    ...(p.imageUrl !== undefined && { image_url: p.imageUrl }),
   };
-  products.push(newProduct);
-  writeProducts(products);
-  return newProduct;
 }
 
-export function updateProduct(id: string, updates: Partial<Omit<Product, 'id'>>): Product | null {
-  const products = readProducts();
-  const idx = products.findIndex((p) => p.id === id);
-  if (idx === -1) return null;
-  products[idx] = { ...products[idx], ...updates };
-  writeProducts(products);
-  return products[idx];
-}
-
-export function deleteProduct(id: string): boolean {
-  const products = readProducts();
-  const filtered = products.filter((p) => p.id !== id);
-  if (filtered.length === products.length) return false;
-  writeProducts(filtered);
-
-  // Also remove all pieces and combos for this product
-  const pieces = readPieces().filter((p) => p.productId !== id);
-  writePieces(pieces);
-  const combos = readCombos().filter((c) => c.productId !== id);
-  writeCombos(combos);
-
-  return true;
-}
-
-// ── Piece queries ──
-export function getAllPieces(productId?: string): ContentPiece[] {
-  const pieces = readPieces();
-  if (productId) return pieces.filter((p) => p.productId === productId);
-  return pieces;
-}
-
-export function getHooks(productId?: string): ContentPiece[] {
-  return readPieces().filter(
-    (p) => p.type === 'hook' && (productId ? p.productId === productId : true),
-  );
-}
-
-export function getBodies(productId?: string): ContentPiece[] {
-  return readPieces().filter(
-    (p) => p.type === 'body' && (productId ? p.productId === productId : true),
-  );
-}
-
-export function getCTAs(productId?: string): ContentPiece[] {
-  return readPieces().filter(
-    (p) => p.type === 'cta' && (productId ? p.productId === productId : true),
-  );
-}
-
-export function getPiecesByAngle(
-  angle: Angle,
-  type?: ContentPiece['type'],
-  productId?: string,
-): ContentPiece[] {
-  return readPieces().filter(
-    (p) =>
-      p.angle === angle &&
-      (type ? p.type === type : true) &&
-      (productId ? p.productId === productId : true),
-  );
-}
-
-// ── Piece CRUD ──
-export function addPiece(piece: Omit<ContentPiece, 'id' | 'createdAt'>): ContentPiece {
-  const pieces = readPieces();
-  const newPiece: ContentPiece = {
-    ...piece,
-    id: uid(),
-    createdAt: new Date().toISOString().slice(0, 10),
+function fromDbProduct(row: any): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    emoji: row.emoji,
+    description: row.description,
+    shopUrl: row.shop_url,
+    imageUrl: row.image_url,
+    createdAt: row.created_at,
   };
-  pieces.push(newPiece);
-  writePieces(pieces);
-  return newPiece;
 }
 
-export function updatePiece(id: string, updates: Partial<Omit<ContentPiece, 'id'>>): ContentPiece | null {
-  const pieces = readPieces();
-  const idx = pieces.findIndex((p) => p.id === id);
-  if (idx === -1) return null;
-  pieces[idx] = { ...pieces[idx], ...updates };
-  writePieces(pieces);
-  return pieces[idx];
+function toDbPiece(p: Partial<ContentPiece>) {
+  return {
+    ...(p.id !== undefined && { id: p.id }),
+    ...(p.productId !== undefined && { product_id: p.productId }),
+    ...(p.type !== undefined && { type: p.type }),
+    ...(p.angle !== undefined && { angle: p.angle }),
+    ...(p.text !== undefined && { text: p.text }),
+    ...(p.visualHook !== undefined && { visual_hook: p.visualHook }),
+    ...(p.status !== undefined && { status: p.status }),
+  };
 }
 
-export function deletePiece(id: string): boolean {
-  const pieces = readPieces();
-  const filtered = pieces.filter((p) => p.id !== id);
-  if (filtered.length === pieces.length) return false;
-  writePieces(filtered);
-  return true;
+function fromDbPiece(row: any): ContentPiece {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    type: row.type,
+    angle: row.angle,
+    text: row.text,
+    visualHook: row.visual_hook,
+    status: row.status,
+    createdAt: row.created_at,
+  };
 }
 
-// ── Combo queries ──
-export function getCombos(productId?: string): VideoCombo[] {
-  const combos = readCombos();
-  if (productId) return combos.filter((c) => c.productId === productId);
-  return combos;
+function toDbCombo(c: Partial<VideoCombo>) {
+  return {
+    ...(c.id !== undefined && { id: c.id }),
+    ...(c.productId !== undefined && { product_id: c.productId }),
+    ...(c.hookId !== undefined && { hook_id: c.hookId }),
+    ...(c.bodyId !== undefined && { body_id: c.bodyId }),
+    ...(c.ctaId !== undefined && { cta_id: c.ctaId }),
+    ...(c.angle !== undefined && { angle: c.angle }),
+    ...(c.status !== undefined && { status: c.status }),
+    ...(c.scheduledDate !== undefined && { scheduled_date: c.scheduledDate }),
+    ...(c.notes !== undefined && { notes: c.notes }),
+  };
 }
 
-// ── Combo CRUD ──
-export function addCombo(combo: Omit<VideoCombo, 'id'>): VideoCombo {
-  const combos = readCombos();
-  const newCombo: VideoCombo = { ...combo, id: uid() };
-  combos.push(newCombo);
-  writeCombos(combos);
-  return newCombo;
+function fromDbCombo(row: any): VideoCombo {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    hookId: row.hook_id,
+    bodyId: row.body_id,
+    ctaId: row.cta_id,
+    angle: row.angle,
+    status: row.status,
+    scheduledDate: row.scheduled_date,
+    notes: row.notes,
+  };
 }
 
-export function updateCombo(id: string, updates: Partial<Omit<VideoCombo, 'id'>>): VideoCombo | null {
-  const combos = readCombos();
-  const idx = combos.findIndex((c) => c.id === id);
-  if (idx === -1) return null;
-  combos[idx] = { ...combos[idx], ...updates };
-  writeCombos(combos);
-  return combos[idx];
+function toDbAnalysis(a: ProductAnalysis) {
+  return {
+    product_id: a.productId,
+    price: a.price,
+    original_price: a.originalPrice,
+    discount: a.discount,
+    shipping: a.shipping,
+    rating: a.rating,
+    review_count: a.reviewCount,
+    sold_count: a.soldCount,
+    seller: a.seller,
+    sizes: a.sizes,
+    colors: a.colors,
+    material: a.material,
+    image_url: a.imageUrl,
+    features: a.features,
+    main_benefit: a.mainBenefit,
+    decision_pyramid: a.decisionPyramid,
+    objections: a.objections,
+    strategic_insights: a.strategicInsights,
+  };
 }
 
-export function deleteCombo(id: string): boolean {
-  const combos = readCombos();
-  const filtered = combos.filter((c) => c.id !== id);
-  if (filtered.length === combos.length) return false;
-  writeCombos(filtered);
-  return true;
+function fromDbAnalysis(row: any): ProductAnalysis {
+  return {
+    productId: row.product_id,
+    price: row.price,
+    originalPrice: row.original_price,
+    discount: row.discount,
+    shipping: row.shipping,
+    rating: row.rating,
+    reviewCount: row.review_count,
+    soldCount: row.sold_count,
+    seller: row.seller,
+    sizes: row.sizes,
+    colors: row.colors,
+    material: row.material,
+    imageUrl: row.image_url,
+    features: row.features,
+    mainBenefit: row.main_benefit,
+    decisionPyramid: row.decision_pyramid,
+    objections: row.objections,
+    strategicInsights: row.strategic_insights,
+  };
 }
 
-// ── Combo generator ──
-export function generateCombos(angle: Angle, count: number, productId: string): VideoCombo[] {
-  const hooks = getPiecesByAngle(angle, 'hook', productId);
-  const bodies = getPiecesByAngle(angle, 'body', productId);
-  const ctas = getPiecesByAngle(angle, 'cta', productId);
+// ── Products ──
+
+export async function getProducts(): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) { console.error('getProducts error:', error); return []; }
+  return (data || []).map(fromDbProduct);
+}
+
+export async function getProductById(id: string): Promise<Product | undefined> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error || !data) return undefined;
+  return fromDbProduct(data);
+}
+
+export async function addProduct(product: Omit<Product, 'id' | 'createdAt'>): Promise<Product> {
+  const { data, error } = await supabase
+    .from('products')
+    .insert(toDbProduct(product as any))
+    .select()
+    .single();
+  if (error) throw error;
+  return fromDbProduct(data);
+}
+
+export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .update(toDbProduct(updates))
+    .eq('id', id)
+    .select()
+    .single();
+  if (error || !data) return null;
+  return fromDbProduct(data);
+}
+
+export async function deleteProduct(id: string): Promise<boolean> {
+  // Delete related records first
+  await supabase.from('content_pieces').delete().eq('product_id', id);
+  await supabase.from('video_combos').delete().eq('product_id', id);
+  await supabase.from('product_analyses').delete().eq('product_id', id);
+
+  const { error } = await supabase.from('products').delete().eq('id', id);
+  return !error;
+}
+
+// ── Content Pieces ──
+
+export async function getAllPieces(productId?: string): Promise<ContentPiece[]> {
+  let query = supabase.from('content_pieces').select('*').order('created_at', { ascending: true });
+  if (productId) query = query.eq('product_id', productId);
+  const { data, error } = await query;
+  if (error) { console.error('getAllPieces error:', error); return []; }
+  return (data || []).map(fromDbPiece);
+}
+
+export async function getHooks(productId?: string): Promise<ContentPiece[]> {
+  let query = supabase.from('content_pieces').select('*').eq('type', 'hook').order('created_at', { ascending: true });
+  if (productId) query = query.eq('product_id', productId);
+  const { data, error } = await query;
+  if (error) { console.error('getHooks error:', error); return []; }
+  return (data || []).map(fromDbPiece);
+}
+
+export async function getBodies(productId?: string): Promise<ContentPiece[]> {
+  let query = supabase.from('content_pieces').select('*').eq('type', 'body').order('created_at', { ascending: true });
+  if (productId) query = query.eq('product_id', productId);
+  const { data, error } = await query;
+  if (error) { console.error('getBodies error:', error); return []; }
+  return (data || []).map(fromDbPiece);
+}
+
+export async function getCTAs(productId?: string): Promise<ContentPiece[]> {
+  let query = supabase.from('content_pieces').select('*').eq('type', 'cta').order('created_at', { ascending: true });
+  if (productId) query = query.eq('product_id', productId);
+  const { data, error } = await query;
+  if (error) { console.error('getCTAs error:', error); return []; }
+  return (data || []).map(fromDbPiece);
+}
+
+export async function getPiecesByAngle(angle: Angle, type?: string, productId?: string): Promise<ContentPiece[]> {
+  let query = supabase.from('content_pieces').select('*').eq('angle', angle).order('created_at', { ascending: true });
+  if (type) query = query.eq('type', type);
+  if (productId) query = query.eq('product_id', productId);
+  const { data, error } = await query;
+  if (error) { console.error('getPiecesByAngle error:', error); return []; }
+  return (data || []).map(fromDbPiece);
+}
+
+export async function addPiece(piece: Omit<ContentPiece, 'id' | 'createdAt'>): Promise<ContentPiece> {
+  const { data, error } = await supabase
+    .from('content_pieces')
+    .insert(toDbPiece(piece as any))
+    .select()
+    .single();
+  if (error) throw error;
+  return fromDbPiece(data);
+}
+
+export async function updatePiece(id: string, updates: Partial<ContentPiece>): Promise<ContentPiece | null> {
+  const { data, error } = await supabase
+    .from('content_pieces')
+    .update(toDbPiece(updates))
+    .eq('id', id)
+    .select()
+    .single();
+  if (error || !data) return null;
+  return fromDbPiece(data);
+}
+
+export async function deletePiece(id: string): Promise<boolean> {
+  const { error } = await supabase.from('content_pieces').delete().eq('id', id);
+  return !error;
+}
+
+// ── Video Combos ──
+
+export async function getCombos(productId?: string): Promise<VideoCombo[]> {
+  let query = supabase.from('video_combos').select('*').order('created_at', { ascending: true });
+  if (productId) query = query.eq('product_id', productId);
+  const { data, error } = await query;
+  if (error) { console.error('getCombos error:', error); return []; }
+  return (data || []).map(fromDbCombo);
+}
+
+export async function addCombo(combo: Omit<VideoCombo, 'id'>): Promise<VideoCombo> {
+  const { data, error } = await supabase
+    .from('video_combos')
+    .insert(toDbCombo(combo as any))
+    .select()
+    .single();
+  if (error) throw error;
+  return fromDbCombo(data);
+}
+
+export async function updateCombo(id: string, updates: Partial<VideoCombo>): Promise<VideoCombo | null> {
+  const { data, error } = await supabase
+    .from('video_combos')
+    .update(toDbCombo(updates))
+    .eq('id', id)
+    .select()
+    .single();
+  if (error || !data) return null;
+  return fromDbCombo(data);
+}
+
+export async function deleteCombo(id: string): Promise<boolean> {
+  const { error } = await supabase.from('video_combos').delete().eq('id', id);
+  return !error;
+}
+
+export async function generateCombos(angle: Angle, count: number, productId: string): Promise<VideoCombo[]> {
+  const hooks = await getPiecesByAngle(angle, 'hook', productId);
+  const bodies = await getPiecesByAngle(angle, 'body', productId);
+  const ctas = await getPiecesByAngle(angle, 'cta', productId);
 
   if (hooks.length === 0 || bodies.length === 0 || ctas.length === 0) {
     return [];
@@ -231,7 +295,7 @@ export function generateCombos(angle: Angle, count: number, productId: string): 
   const generated: VideoCombo[] = [];
 
   for (let i = 0; i < count; i++) {
-    const combo = addCombo({
+    const combo = await addCombo({
       productId,
       hookId: pick(hooks).id,
       bodyId: pick(bodies).id,
@@ -245,18 +309,16 @@ export function generateCombos(angle: Angle, count: number, productId: string): 
   return generated;
 }
 
-// ── Schedule helper ──
-export function getSchedule(date: string, productId?: string): VideoCombo[] {
-  return readCombos().filter(
-    (c) =>
-      c.scheduledDate === date &&
-      (productId ? c.productId === productId : true),
-  );
+export async function getSchedule(date: string, productId?: string): Promise<VideoCombo[]> {
+  let query = supabase.from('video_combos').select('*').eq('scheduled_date', date);
+  if (productId) query = query.eq('product_id', productId);
+  const { data, error } = await query;
+  if (error) { console.error('getSchedule error:', error); return []; }
+  return (data || []).map(fromDbCombo);
 }
 
-// ── Gravacao sessions ──
-export function getSessionsForDate(date: string): GravacaoSession[] {
-  const combos = getSchedule(date);
+export async function getSessionsForDate(date: string): Promise<GravacaoSession[]> {
+  const combos = await getSchedule(date);
   const grouped = new Map<string, VideoCombo[]>();
 
   for (const combo of combos) {
@@ -283,36 +345,26 @@ export function getSessionsForDate(date: string): GravacaoSession[] {
   return sessions;
 }
 
-// ── Analysis storage ──
-const ANALYSIS_KEY = 'tikspy:analysis';
+// ── Product Analysis ──
 
-function readAnalyses(): ProductAnalysis[] {
-  if (!isBrowser()) return [];
-  const raw = localStorage.getItem(ANALYSIS_KEY);
-  if (!raw) {
-    localStorage.setItem(ANALYSIS_KEY, JSON.stringify(INITIAL_ANALYSES));
-    return INITIAL_ANALYSES;
-  }
-  return JSON.parse(raw);
+export async function getAnalysis(productId: string): Promise<ProductAnalysis | undefined> {
+  const { data, error } = await supabase
+    .from('product_analyses')
+    .select('*')
+    .eq('product_id', productId)
+    .single();
+  if (error || !data) return undefined;
+  return fromDbAnalysis(data);
 }
 
-function writeAnalyses(analyses: ProductAnalysis[]): void {
-  if (!isBrowser()) return;
-  localStorage.setItem(ANALYSIS_KEY, JSON.stringify(analyses));
+export async function saveAnalysis(analysis: ProductAnalysis): Promise<void> {
+  const dbRow = toDbAnalysis(analysis);
+  const { error } = await supabase
+    .from('product_analyses')
+    .upsert(dbRow, { onConflict: 'product_id' });
+  if (error) console.error('saveAnalysis error:', error);
 }
 
-export function getAnalysis(productId: string): ProductAnalysis | undefined {
-  return readAnalyses().find(a => a.productId === productId);
-}
-
-export function saveAnalysis(analysis: ProductAnalysis): void {
-  const analyses = readAnalyses();
-  const idx = analyses.findIndex(a => a.productId === analysis.productId);
-  if (idx >= 0) analyses[idx] = analysis;
-  else analyses.push(analysis);
-  writeAnalyses(analyses);
-}
-
-export function deleteAnalysis(productId: string): void {
-  writeAnalyses(readAnalyses().filter(a => a.productId !== productId));
+export async function deleteAnalysis(productId: string): Promise<void> {
+  await supabase.from('product_analyses').delete().eq('product_id', productId);
 }

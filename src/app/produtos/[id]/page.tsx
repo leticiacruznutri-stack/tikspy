@@ -149,9 +149,11 @@ function ProductDetail() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setProduct(getProductById(productId));
-    setAnalysis(getAnalysis(productId));
-    setLoaded(true);
+    (async () => {
+      setProduct(await getProductById(productId));
+      setAnalysis(await getAnalysis(productId));
+      setLoaded(true);
+    })();
   }, [productId]);
 
   if (!loaded) {

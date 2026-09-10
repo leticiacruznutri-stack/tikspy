@@ -20,6 +20,7 @@ import {
   getProducts,
   getSchedule,
 } from "@/lib/store";
+import { seedDatabase } from "@/lib/seed";
 import { ANGLES } from "@/lib/angles";
 import type { ContentPiece, Product, VideoCombo } from "@/lib/types";
 
@@ -32,15 +33,17 @@ export default function DashboardPage() {
   const [todaySchedule, setTodaySchedule] = useState<VideoCombo[]>([]);
 
   useEffect(() => {
-    const allProducts = getProducts();
-    setProducts(allProducts);
-    setHooks(getHooks());
-    setBodies(getBodies());
-    setCtas(getCTAs());
-    setCombos(getCombos());
+    seedDatabase().then(async () => {
+      const allProducts = await getProducts();
+      setProducts(allProducts);
+      setHooks(await getHooks());
+      setBodies(await getBodies());
+      setCtas(await getCTAs());
+      setCombos(await getCombos());
 
-    const today = new Date().toISOString().split("T")[0];
-    setTodaySchedule(getSchedule(today));
+      const today = new Date().toISOString().split("T")[0];
+      setTodaySchedule(await getSchedule(today));
+    });
   }, []);
 
   const productHookCount = (pid: string) =>
