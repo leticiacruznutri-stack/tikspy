@@ -128,7 +128,11 @@ export default function DashboardPage() {
                 className="rounded-2xl bg-white border border-[#e8e0d4] p-5 shadow-sm hover:bg-[#f5f0ea] transition-colors group"
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-2xl">{product.emoji}</span>
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-[#e8e0d4]" />
+                  ) : (
+                    <span className="text-2xl">{product.emoji}</span>
+                  )}
                   <h3 className="text-base font-semibold text-[#1a1a2e] group-hover:text-[#1a1a2e]">
                     {product.name}
                   </h3>
@@ -183,7 +187,11 @@ export default function DashboardPage() {
               {todayByProduct.map(({ product, combos: pCombos }) => (
                 <div key={product.id}>
                   <p className="text-sm font-medium text-[#1a1a2e] mb-2 flex items-center gap-1.5">
-                    <span>{product.emoji}</span>
+                    {product.imageUrl ? (
+                      <img src={product.imageUrl} alt={product.name} className="w-5 h-5 rounded object-cover" />
+                    ) : (
+                      <span>{product.emoji}</span>
+                    )}
                     {product.name}
                     <span className="text-[#9ca3af] font-normal">
                       ({pCombos.length} videos)
