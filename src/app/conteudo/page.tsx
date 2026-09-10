@@ -432,7 +432,7 @@ function ConteudoPage() {
                 {/* Color accent bar */}
                 <div className="h-1" style={{ backgroundColor: angle?.color }} />
 
-                <div className="p-4">
+                <div className="p-4 pb-3">
                   {/* Top row: product + angle + status + actions */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -441,10 +441,9 @@ function ConteudoPage() {
                           {product.emoji} {product.name}
                         </span>
                       )}
-                      <span className="text-[#e0d8cc]">·</span>
                       <span
-                        className="text-xs font-medium"
-                        style={{ color: angle?.color }}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                        style={{ backgroundColor: angle?.color + "15", color: angle?.color }}
                       >
                         {angle?.emoji} {angle?.label}
                       </span>
@@ -474,35 +473,30 @@ function ConteudoPage() {
                     </div>
                   </div>
 
-                  {/* Hook text - the spoken line */}
-                  <div className="mb-2">
-                    <span className="text-[10px] font-semibold text-[#c8b99a] uppercase tracking-wider">
-                      {activeTab === "hook" ? "Fala" : activeTab === "body" ? "Roteiro" : "Chamada"}
-                    </span>
-                    <p className="text-[14px] text-[#1a1a2e] leading-relaxed mt-1">
-                      &ldquo;{piece.text}&rdquo;
-                    </p>
-                  </div>
+                  {/* Hook text - the spoken line, prominent */}
+                  <p className="text-[15px] text-[#1a1a2e] leading-relaxed font-medium">
+                    &ldquo;{piece.text}&rdquo;
+                  </p>
+                </div>
 
-                  {/* Visual hook / Scene - clearly separated */}
-                  {piece.visualHook && (
-                    <div className="mt-3 pt-3 border-t border-[#f0ebe3]">
-                      <div className="flex items-start gap-2.5">
-                        <div className="mt-0.5 flex h-5 w-5 items-center justify-center rounded bg-[#f5f0ea]">
-                          <Video size={12} className="text-[#c8b99a]" />
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-semibold text-[#c8b99a] uppercase tracking-wider">
-                            Take Visual
-                          </span>
-                          <p className="text-[13px] text-[#6b7280] leading-relaxed mt-0.5">
-                            {piece.visualHook}
-                          </p>
-                        </div>
+                {/* Visual hook / Scene - visually distinct block */}
+                {piece.visualHook && (
+                  <div className="mx-3 mb-3 rounded-xl bg-[#f5f0ea] px-4 py-3">
+                    <div className="flex items-start gap-2.5">
+                      <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-white/80 shadow-sm">
+                        <Video size={13} className="text-[#b8a88a]" />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-[10px] font-bold text-[#b8a88a] uppercase tracking-widest">
+                          Take Visual
+                        </span>
+                        <p className="text-[13px] text-[#5a5145] leading-relaxed mt-0.5">
+                          {piece.visualHook}
+                        </p>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}
