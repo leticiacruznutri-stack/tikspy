@@ -36,10 +36,10 @@ const STATUS_LABELS: Record<StatusType, string> = {
 };
 
 const STATUS_COLORS: Record<StatusType, string> = {
-  draft: "bg-[#9ca3af]",
-  ready: "bg-[#3b82f6]",
-  filmed: "bg-[#22c55e]",
-  posted: "bg-[#8b5cf6]",
+  draft: "bg-[#d1d5db] text-[#4b5563]",
+  ready: "bg-[#dbeafe] text-[#2563eb]",
+  filmed: "bg-[#dcfce7] text-[#16a34a]",
+  posted: "bg-[#ede9fe] text-[#7c3aed]",
 };
 
 const STATUS_CYCLE: StatusType[] = ["draft", "ready", "filmed", "posted"];
@@ -183,23 +183,23 @@ function ConteudoPage() {
             setFormProduct(products[0]?.id || "");
             setShowForm(true);
           }}
-          className="flex items-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors"
+          className="flex items-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors shadow-sm"
         >
           <Plus size={16} />
-          Adicionar
+          Novo {activeTab === "hook" ? "Hook" : activeTab === "body" ? "Body" : "CTA"}
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-white border border-[#e8e0d4] p-1 shadow-sm">
+      <div className="flex gap-1 rounded-xl bg-[#f5f0ea]/60 border border-[#e8e0d4] p-1">
         {TAB_CONFIG.map(({ type, label, icon: Icon }) => (
           <button
             key={type}
             onClick={() => setActiveTab(type)}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
               activeTab === type
-                ? "bg-[#1a1a2e] text-white"
-                : "text-[#6b7280] hover:text-[#1a1a2e] hover:bg-[#f5f0ea]"
+                ? "bg-white text-[#1a1a2e] shadow-sm"
+                : "text-[#9ca3af] hover:text-[#6b7280]"
             }`}
           >
             <Icon size={16} />
@@ -209,18 +209,18 @@ function ConteudoPage() {
       </div>
 
       {/* Filters */}
-      <div className="space-y-3">
+      <div className="rounded-2xl bg-white border border-[#e8e0d4] p-4 space-y-3">
         {/* Product filter */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-[#9ca3af] uppercase tracking-wider">
-            Produto:
+          <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider w-16 shrink-0">
+            Produto
           </span>
           <button
             onClick={() => setSelectedProducts([])}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
               selectedProducts.length === 0
-                ? "bg-[#1a1a2e] text-white shadow-sm"
-                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea] hover:text-[#1a1a2e]"
+                ? "bg-[#1a1a2e] text-white"
+                : "text-[#9ca3af] hover:text-[#6b7280]"
             }`}
           >
             Todos
@@ -229,10 +229,10 @@ function ConteudoPage() {
             <button
               key={product.id}
               onClick={() => toggleProduct(product.id)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-all border ${
                 selectedProducts.includes(product.id)
-                  ? "bg-[#1a1a2e] text-white"
-                  : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea]"
+                  ? "bg-[#f5f0ea] border-[#c8b99a] text-[#1a1a2e]"
+                  : "border-transparent text-[#9ca3af] hover:text-[#6b7280]"
               }`}
             >
               {product.emoji} {product.name}
@@ -240,17 +240,19 @@ function ConteudoPage() {
           ))}
         </div>
 
+        <div className="border-t border-[#f0ebe3]" />
+
         {/* Angle filter */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-[#9ca3af] uppercase tracking-wider">
-            Ângulo:
+          <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider w-16 shrink-0">
+            Ângulo
           </span>
           <button
             onClick={() => setSelectedAngles([])}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
               selectedAngles.length === 0
-                ? "bg-[#1a1a2e] text-white shadow-sm"
-                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea] hover:text-[#1a1a2e]"
+                ? "bg-[#1a1a2e] text-white"
+                : "text-[#9ca3af] hover:text-[#6b7280]"
             }`}
           >
             Todos
@@ -259,15 +261,11 @@ function ConteudoPage() {
             <button
               key={angle.id}
               onClick={() => toggleAngle(angle.id)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors border ${
-                selectedAngles.includes(angle.id)
-                  ? "text-white"
-                  : "bg-white text-[#6b7280] hover:bg-[#f5f0ea]"
-              }`}
+              className="rounded-full px-3 py-1 text-xs font-medium transition-all border"
               style={
                 selectedAngles.includes(angle.id)
-                  ? { backgroundColor: angle.color, borderColor: angle.color }
-                  : { borderColor: "#e8e0d4" }
+                  ? { backgroundColor: angle.color + "18", borderColor: angle.color + "50", color: angle.color }
+                  : { borderColor: "transparent", color: "#9ca3af" }
               }
             >
               {angle.emoji} {angle.label}
@@ -275,17 +273,19 @@ function ConteudoPage() {
           ))}
         </div>
 
+        <div className="border-t border-[#f0ebe3]" />
+
         {/* Status filter */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-[#9ca3af] uppercase tracking-wider">
-            Status:
+          <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider w-16 shrink-0">
+            Status
           </span>
           <button
             onClick={() => setSelectedStatus("all")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
               selectedStatus === "all"
-                ? "bg-[#1a1a2e] text-white shadow-sm"
-                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea] hover:text-[#1a1a2e]"
+                ? "bg-[#1a1a2e] text-white"
+                : "text-[#9ca3af] hover:text-[#6b7280]"
             }`}
           >
             Todos
@@ -294,10 +294,10 @@ function ConteudoPage() {
             <button
               key={s}
               onClick={() => setSelectedStatus(s)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
                 selectedStatus === s
-                  ? "bg-[#1a1a2e] text-white"
-                  : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea]"
+                  ? STATUS_COLORS[s]
+                  : "text-[#9ca3af] hover:text-[#6b7280]"
               }`}
             >
               {STATUS_LABELS[s]}
@@ -307,7 +307,9 @@ function ConteudoPage() {
       </div>
 
       {/* Count */}
-      <p className="text-sm text-[#9ca3af]">{filtered.length} itens</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-[#9ca3af]">{filtered.length} itens</p>
+      </div>
 
       {/* Add/Edit Form */}
       {showForm && (
@@ -411,35 +413,46 @@ function ConteudoPage() {
 
       {/* Content Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 shadow-sm text-center">
+        <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 text-center">
           <p className="text-[#9ca3af] text-sm">
             Nenhum conteúdo encontrado com os filtros atuais
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filtered.map((piece) => {
             const angle = ANGLES.find((a) => a.id === piece.angle);
+            const product = getProduct(piece.productId);
 
             return (
               <div
                 key={piece.id}
-                className="rounded-2xl bg-white border border-[#e8e0d4] shadow-sm hover:shadow-md transition-shadow group"
+                className="rounded-2xl bg-white border border-[#e8e0d4] hover:border-[#c8b99a] transition-all group overflow-hidden"
               >
-                {/* Main content */}
-                <div className="p-5">
-                  {/* Top: angle tag + status */}
+                {/* Color accent bar */}
+                <div className="h-1" style={{ backgroundColor: angle?.color }} />
+
+                <div className="p-4">
+                  {/* Top row: product + angle + status + actions */}
                   <div className="flex items-center justify-between mb-3">
-                    <span
-                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium"
-                      style={{ backgroundColor: angle?.color + "15", color: angle?.color }}
-                    >
-                      {angle?.emoji} {angle?.label}
-                    </span>
                     <div className="flex items-center gap-2">
+                      {product && (
+                        <span className="text-xs text-[#9ca3af]">
+                          {product.emoji} {product.name}
+                        </span>
+                      )}
+                      <span className="text-[#e0d8cc]">·</span>
+                      <span
+                        className="text-xs font-medium"
+                        style={{ color: angle?.color }}
+                      >
+                        {angle?.emoji} {angle?.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => cycleStatus(piece)}
-                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-white ${STATUS_COLORS[piece.status]}`}
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${STATUS_COLORS[piece.status]}`}
                         title="Clique para mudar status"
                       >
                         {STATUS_LABELS[piece.status]}
@@ -447,40 +460,49 @@ function ConteudoPage() {
                       <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => startEdit(piece)}
-                          className="rounded-lg p-1.5 text-[#9ca3af] hover:text-[#1a1a2e] hover:bg-[#FAF7F2] transition-colors"
+                          className="rounded-lg p-1 text-[#c8b99a] hover:text-[#1a1a2e] transition-colors"
                         >
-                          <Pencil size={14} />
+                          <Pencil size={13} />
                         </button>
                         <button
                           onClick={() => handleDelete(piece.id)}
-                          className="rounded-lg p-1.5 text-[#9ca3af] hover:text-[#fe2c55] hover:bg-[#fe2c55]/10 transition-colors"
+                          className="rounded-lg p-1 text-[#c8b99a] hover:text-[#fe2c55] transition-colors"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* Copy text - prominent */}
-                  <p className="text-[15px] text-[#1a1a2e] leading-relaxed font-medium">
-                    &ldquo;{piece.text}&rdquo;
-                  </p>
-                </div>
+                  {/* Hook text - the spoken line */}
+                  <div className="mb-2">
+                    <span className="text-[10px] font-semibold text-[#c8b99a] uppercase tracking-wider">
+                      {activeTab === "hook" ? "Fala" : activeTab === "body" ? "Roteiro" : "Chamada"}
+                    </span>
+                    <p className="text-[14px] text-[#1a1a2e] leading-relaxed mt-1">
+                      &ldquo;{piece.text}&rdquo;
+                    </p>
+                  </div>
 
-                {/* Visual hook / Scene - separate section */}
-                {piece.visualHook && (
-                  <div className="px-5 py-3 bg-[#FAF7F2] border-t border-[#e8e0d4] rounded-b-2xl">
-                    <div className="flex items-start gap-2">
-                      <Video size={14} className="text-[#9ca3af] mt-0.5 shrink-0" />
-                      <div>
-                        <span className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider">Cena</span>
-                        <p className="text-sm text-[#6b7280] leading-relaxed mt-0.5">
-                          {piece.visualHook}
-                        </p>
+                  {/* Visual hook / Scene - clearly separated */}
+                  {piece.visualHook && (
+                    <div className="mt-3 pt-3 border-t border-[#f0ebe3]">
+                      <div className="flex items-start gap-2.5">
+                        <div className="mt-0.5 flex h-5 w-5 items-center justify-center rounded bg-[#f5f0ea]">
+                          <Video size={12} className="text-[#c8b99a]" />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-semibold text-[#c8b99a] uppercase tracking-wider">
+                            Take Visual
+                          </span>
+                          <p className="text-[13px] text-[#6b7280] leading-relaxed mt-0.5">
+                            {piece.visualHook}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })}
