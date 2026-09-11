@@ -169,7 +169,9 @@ export default function VideosPage() {
   };
 
   const getPieceNumber = (id: string, type: string): number => {
-    const ofType = allPiecesCache.filter((p) => p.type === type);
+    const piece = allPiecesCache.find((p) => p.id === id);
+    if (!piece) return 0;
+    const ofType = allPiecesCache.filter((p) => p.type === type && p.productId === piece.productId);
     const idx = ofType.findIndex((p) => p.id === id);
     return idx >= 0 ? idx + 1 : 0;
   };
