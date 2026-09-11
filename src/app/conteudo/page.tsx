@@ -105,6 +105,8 @@ function ConteudoPage() {
   const [formAngle, setFormAngle] = useState<Angle>("estetica");
   const [formText, setFormText] = useState("");
   const [formVisualHook, setFormVisualHook] = useState("");
+  const [formHeadline, setFormHeadline] = useState("");
+  const [formVideoFormat, setFormVideoFormat] = useState("");
 
   const reload = useCallback(async () => {
     setProducts(await getProducts());
@@ -156,6 +158,8 @@ function ConteudoPage() {
         angle: formAngle,
         text: formText.trim(),
         visualHook: activeTab === "hook" ? formVisualHook.trim() || undefined : undefined,
+        headline: activeTab === "hook" ? formHeadline.trim() || undefined : undefined,
+        videoFormat: activeTab === "hook" ? formVideoFormat || undefined : undefined,
       });
     } else {
       await addPiece({
@@ -164,6 +168,8 @@ function ConteudoPage() {
         angle: formAngle,
         text: formText.trim(),
         visualHook: activeTab === "hook" ? formVisualHook.trim() || undefined : undefined,
+        headline: activeTab === "hook" ? formHeadline.trim() || undefined : undefined,
+        videoFormat: activeTab === "hook" ? formVideoFormat || undefined : undefined,
         status: "draft",
       });
     }
@@ -178,6 +184,8 @@ function ConteudoPage() {
     setFormAngle(piece.angle);
     setFormText(piece.text);
     setFormVisualHook(piece.visualHook || "");
+    setFormHeadline(piece.headline || "");
+    setFormVideoFormat(piece.videoFormat || "");
     setShowForm(true);
   };
 
@@ -193,6 +201,8 @@ function ConteudoPage() {
     setFormAngle("estetica");
     setFormText("");
     setFormVisualHook("");
+    setFormHeadline("");
+    setFormVideoFormat("");
   };
 
   const getProduct = (id: string) => products.find((p) => p.id === id);
@@ -444,17 +454,47 @@ function ConteudoPage() {
           </div>
 
           {activeTab === "hook" && (
-            <div>
-              <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-                Visual Hook (opcional)
-              </label>
-              <input
-                value={formVisualHook}
-                onChange={(e) => setFormVisualHook(e.target.value)}
-                className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-                placeholder="Descreva o visual hook..."
-              />
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                    Headline (texto na tela)
+                  </label>
+                  <input
+                    value={formHeadline}
+                    onChange={(e) => setFormHeadline(e.target.value)}
+                    className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
+                    placeholder="Frase curta pra tela do vídeo"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                    Formato do vídeo
+                  </label>
+                  <select
+                    value={formVideoFormat}
+                    onChange={(e) => setFormVideoFormat(e.target.value)}
+                    className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
+                  >
+                    <option value="">Selecionar...</option>
+                    {VIDEO_FORMATS.map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                  Take visual (opcional)
+                </label>
+                <input
+                  value={formVisualHook}
+                  onChange={(e) => setFormVisualHook(e.target.value)}
+                  className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
+                  placeholder="Como gravar esse vídeo..."
+                />
+              </div>
+            </>
           )}
 
           <div className="flex justify-end gap-2">
