@@ -102,7 +102,7 @@ function ConteudoPage() {
 
   // Form state
   const [formProduct, setFormProduct] = useState("");
-  const [formAngle, setFormAngle] = useState<Angle>("nao-vaza");
+  const [formAngle, setFormAngle] = useState<Angle>("estetica");
   const [formText, setFormText] = useState("");
   const [formVisualHook, setFormVisualHook] = useState("");
 
@@ -190,7 +190,7 @@ function ConteudoPage() {
     setShowForm(false);
     setEditingId(null);
     setFormProduct(products[0]?.id || "");
-    setFormAngle("nao-vaza");
+    setFormAngle("estetica");
     setFormText("");
     setFormVisualHook("");
   };

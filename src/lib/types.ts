@@ -1,11 +1,11 @@
 export type Angle =
-  | 'nao-vaza'
   | 'estetica'
-  | '2em1'
-  | 'tamanho'
-  | 'temperatura'
-  | 'uso-inesperado'
-  | 'criancas';
+  | 'funcionalidade'
+  | 'qualidade'
+  | 'versatilidade'
+  | 'lifestyle'
+  | 'preco'
+  | 'maternidade';
 
 export type Product = {
   id: string;

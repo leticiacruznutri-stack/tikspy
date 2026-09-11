@@ -44,12 +44,12 @@ export default function VideosPage() {
 
   // Generator state
   const [genProduct, setGenProduct] = useState("");
-  const [genAngle, setGenAngle] = useState<Angle>("nao-vaza");
+  const [genAngle, setGenAngle] = useState<Angle>("estetica");
   const [genCount, setGenCount] = useState(5);
 
   // Manual builder state
   const [manProduct, setManProduct] = useState("");
-  const [manAngle, setManAngle] = useState<Angle>("nao-vaza");
+  const [manAngle, setManAngle] = useState<Angle>("estetica");
   const [manHooks, setManHooks] = useState<ContentPiece[]>([]);
   const [manBodies, setManBodies] = useState<ContentPiece[]>([]);
   const [manCtas, setManCtas] = useState<ContentPiece[]>([]);
