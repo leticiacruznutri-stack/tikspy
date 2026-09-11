@@ -292,15 +292,14 @@ export async function deleteCombo(id: string): Promise<boolean> {
   return !error;
 }
 
-export async function generateCombos(angle: Angle, count: number, productId: string): Promise<VideoCombo[]> {
-  const allHooks = await getPiecesByAngle(angle, 'hook', productId);
-  const allBodies = await getPiecesByAngle(angle, 'body', productId);
-  const allCtas = await getPiecesByAngle(angle, 'cta', productId);
+export async function generateCombos(angle: Angle | null, count: number, productId: string): Promise<VideoCombo[]> {
+  // Pega todas as peças gravadas do produto, sem filtrar por ângulo
+  const allPieces = await getAllPieces(productId);
+  const filmed = allPieces.filter(p => p.status === 'filmed');
 
-  // Só usar peças que já foram gravadas
-  const hooks = allHooks.filter(p => p.status === 'filmed');
-  const bodies = allBodies.filter(p => p.status === 'filmed');
-  const ctas = allCtas.filter(p => p.status === 'filmed');
+  const hooks = filmed.filter(p => p.type === 'hook');
+  const bodies = filmed.filter(p => p.type === 'body');
+  const ctas = filmed.filter(p => p.type === 'cta');
 
   if (hooks.length === 0 || bodies.length === 0 || ctas.length === 0) {
     return [];
@@ -315,7 +314,7 @@ export async function generateCombos(angle: Angle, count: number, productId: str
       hookId: pick(hooks).id,
       bodyId: pick(bodies).id,
       ctaId: pick(ctas).id,
-      angle,
+      angle: angle || pick(hooks).angle,
       status: 'planned',
     });
     generated.push(combo);

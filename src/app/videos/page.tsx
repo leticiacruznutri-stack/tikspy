@@ -20,6 +20,7 @@ import {
   updateCombo,
   deleteCombo,
   getPiecesByAngle,
+  getAllPieces,
 } from "@/lib/store";
 import { ANGLES } from "@/lib/angles";
 import type { Angle, ContentPiece, Product, VideoCombo } from "@/lib/types";
@@ -77,18 +78,19 @@ export default function VideosPage() {
     reload();
   }, [reload]);
 
-  // Update manual columns when product/angle change
+  // Update manual columns when product changes
   useEffect(() => {
     if (!manProduct) return;
     (async () => {
-      setManHooks(await getPiecesByAngle(manAngle, "hook", manProduct));
-      setManBodies(await getPiecesByAngle(manAngle, "body", manProduct));
-      setManCtas(await getPiecesByAngle(manAngle, "cta", manProduct));
+      const all = await getAllPieces(manProduct);
+      setManHooks(all.filter(p => p.type === "hook"));
+      setManBodies(all.filter(p => p.type === "body"));
+      setManCtas(all.filter(p => p.type === "cta"));
       setSelectedHook(null);
       setSelectedBody(null);
       setSelectedCta(null);
     })();
-  }, [manProduct, manAngle]);
+  }, [manProduct]);
 
   // Available counts for generator
   useEffect(() => {
@@ -99,15 +101,17 @@ export default function VideosPage() {
       return;
     }
     (async () => {
-      setGenHookCount((await getPiecesByAngle(genAngle, "hook", genProduct)).length);
-      setGenBodyCount((await getPiecesByAngle(genAngle, "body", genProduct)).length);
-      setGenCtaCount((await getPiecesByAngle(genAngle, "cta", genProduct)).length);
+      const all = await getAllPieces(genProduct);
+      const filmed = all.filter(p => p.status === "filmed");
+      setGenHookCount(filmed.filter(p => p.type === "hook").length);
+      setGenBodyCount(filmed.filter(p => p.type === "body").length);
+      setGenCtaCount(filmed.filter(p => p.type === "cta").length);
     })();
-  }, [genProduct, genAngle]);
+  }, [genProduct]);
 
   const handleGenerate = async () => {
     if (!genProduct) return;
-    await generateCombos(genAngle, genCount, genProduct);
+    await generateCombos(null, genCount, genProduct);
     reload();
   };
 
