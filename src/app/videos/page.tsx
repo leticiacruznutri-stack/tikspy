@@ -59,11 +59,13 @@ function PieceCard({
   piece,
   product,
   isSelected,
+  isUsed,
   onSelect,
 }: {
   piece: ContentPiece;
   product?: Product;
   isSelected: boolean;
+  isUsed?: boolean;
   onSelect: () => void;
 }) {
   const handleDragStart = (e: DragEvent) => {
@@ -80,13 +82,18 @@ function PieceCard({
       className={`rounded-xl border px-3 py-2.5 cursor-grab active:cursor-grabbing transition-all hover:shadow-sm ${
         isSelected
           ? "border-[#1a1a2e] bg-[#1a1a2e]/5 ring-1 ring-[#1a1a2e]"
-          : "border-[#e8e0d4] bg-white hover:border-[#c8b99a]"
+          : isUsed
+            ? "border-[#fbbf24] bg-[#fefce8] hover:border-[#f59e0b]"
+            : "border-[#e8e0d4] bg-white hover:border-[#c8b99a]"
       }`}
     >
       <div className="flex items-start gap-2">
-        <GripVertical size={14} className="text-[#c8b99a] shrink-0 mt-0.5" />
+        <GripVertical size={14} className={`shrink-0 mt-0.5 ${isUsed ? "text-[#f59e0b]" : "text-[#c8b99a]"}`} />
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] text-[#1a1a2e] leading-snug">{piece.text}</p>
+          <p className="text-[13px] text-[#1a1a2e] leading-snug">
+            {isUsed && <span className="inline-block w-2 h-2 rounded-full bg-[#f59e0b] mr-1.5 -mt-0.5 align-middle" title="Usado em combo" />}
+            {piece.text}
+          </p>
           <div className="flex items-center gap-2 mt-1.5">
             {product && (
               <span className="text-[10px] text-[#9ca3af]">
@@ -213,6 +220,8 @@ export default function VideosPage() {
   // Combo list filter
   const [comboFilterProduct, setComboFilterProduct] = useState<string>("");
 
+  const [usedPieceIds, setUsedPieceIds] = useState<Set<string>>(new Set());
+
   const reload = useCallback(async () => {
     const [prods, pieces, allCombos] = await Promise.all([
       getProducts(),
@@ -222,6 +231,14 @@ export default function VideosPage() {
     setProducts(prods);
     setAllPieces(pieces);
     setCombos(allCombos);
+    // Track used pieces
+    const used = new Set<string>();
+    for (const c of allCombos) {
+      used.add(c.hookId);
+      if (c.bodyId) used.add(c.bodyId);
+      if (c.ctaId) used.add(c.ctaId);
+    }
+    setUsedPieceIds(used);
   }, []);
 
   useEffect(() => {
@@ -382,6 +399,7 @@ export default function VideosPage() {
                     piece={piece}
                     product={getProduct(piece.productId)}
                     isSelected={selectedId === piece.id}
+                    isUsed={usedPieceIds.has(piece.id)}
                     onSelect={() => handleSelect(piece)}
                   />
                 ))}

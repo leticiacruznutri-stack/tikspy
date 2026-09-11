@@ -24,6 +24,7 @@ import {
   getCTAs,
   getAllPieces,
   getProducts,
+  getCombos,
   addPiece,
   updatePiece,
   deletePiece,
@@ -198,9 +199,24 @@ function ConteudoPage() {
   const [formHeadline, setFormHeadline] = useState("");
   const [formVideoFormat, setFormVideoFormat] = useState("");
 
+  const [usedPieceIds, setUsedPieceIds] = useState<Set<string>>(new Set());
+
   const reload = useCallback(async () => {
-    setProducts(await getProducts());
-    setPieces(await getAllPieces());
+    const [prods, allP, combos] = await Promise.all([
+      getProducts(),
+      getAllPieces(),
+      getCombos(),
+    ]);
+    setProducts(prods);
+    setPieces(allP);
+    // Track which pieces are used in combos
+    const used = new Set<string>();
+    for (const c of combos) {
+      used.add(c.hookId);
+      if (c.bodyId) used.add(c.bodyId);
+      if (c.ctaId) used.add(c.ctaId);
+    }
+    setUsedPieceIds(used);
   }, []);
 
   useEffect(() => {
@@ -720,6 +736,7 @@ function ConteudoPage() {
               const product = getProduct(piece.productId);
               const isChecked = checkedIds.has(piece.id);
               const isExpanded = expandedId === piece.id;
+              const isUsed = usedPieceIds.has(piece.id);
 
               return (
                 <div key={piece.id} className="group">
@@ -727,7 +744,7 @@ function ConteudoPage() {
                   <div
                     className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[#faf8f5] ${
                       idx > 0 ? "border-t border-[#f0ebe3]" : ""
-                    } ${isChecked ? "bg-[#f5f0ea]/50" : ""}`}
+                    } ${isChecked ? "bg-[#f5f0ea]/50" : ""} ${isUsed && !isChecked ? "bg-[#fefce8]/60" : ""}`}
                     onClick={() => setExpandedId(isExpanded ? null : piece.id)}
                   >
                     <button
@@ -747,6 +764,9 @@ function ConteudoPage() {
                       {typePrefix}{idx + 1}
                     </span>
                     <p className="text-[13px] text-[#1a1a2e] leading-snug flex-1">
+                      {isUsed && (
+                        <span className="inline-block w-2 h-2 rounded-full bg-[#f59e0b] mr-1.5 -mt-0.5 align-middle" title="Usado em combo" />
+                      )}
                       {piece.text}
                     </p>
                     <select
