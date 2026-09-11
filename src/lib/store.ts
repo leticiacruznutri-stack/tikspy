@@ -35,6 +35,7 @@ function toDbPiece(p: Partial<ContentPiece>) {
     ...(p.text !== undefined && { text: p.text }),
     ...(p.visualHook !== undefined && { visual_hook: p.visualHook }),
     ...(p.headline !== undefined && { headline: p.headline }),
+    ...(p.videoFormat !== undefined && { video_format: p.videoFormat }),
     ...(p.status !== undefined && { status: p.status }),
   };
 }
@@ -48,6 +49,7 @@ function fromDbPiece(row: any): ContentPiece {
     text: row.text,
     visualHook: row.visual_hook,
     headline: row.headline,
+    videoFormat: row.video_format,
     status: row.status,
     createdAt: row.created_at,
   };

@@ -11,6 +11,7 @@ import {
   Trash2,
   X,
   Video,
+  Film,
 } from "lucide-react";
 import {
   getHooks,
@@ -462,6 +463,12 @@ function ConteudoPage() {
                     >
                       {angle?.emoji} {angle?.label}
                     </span>
+                    {piece.videoFormat && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#f5f0ea] px-2 py-0.5 text-[10px] text-[#9ca3af] shrink-0">
+                        <Film size={9} />
+                        {piece.videoFormat}
+                      </span>
+                    )}
                     <select
                       value={piece.status}
                       onChange={(e) => changeStatus(piece, e.target.value as StatusType)}
