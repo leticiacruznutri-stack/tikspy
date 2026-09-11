@@ -182,7 +182,7 @@ export default function VideosPage() {
           Gerador de Combos
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-[#9ca3af] mb-1">
               Produto
@@ -195,22 +195,6 @@ export default function VideosPage() {
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.emoji} {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-              Ângulo
-            </label>
-            <select
-              value={genAngle}
-              onChange={(e) => setGenAngle(e.target.value as Angle)}
-              className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-            >
-              {ANGLES.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.emoji} {a.label}
                 </option>
               ))}
             </select>
@@ -280,22 +264,6 @@ export default function VideosPage() {
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.emoji} {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-              Ângulo
-            </label>
-            <select
-              value={manAngle}
-              onChange={(e) => setManAngle(e.target.value as Angle)}
-              className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-            >
-              {ANGLES.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.emoji} {a.label}
                 </option>
               ))}
             </select>
