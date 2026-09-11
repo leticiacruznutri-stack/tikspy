@@ -524,9 +524,11 @@ function ConteudoPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((piece) => {
+          {filtered.map((piece, idx) => {
             const angle = ANGLES.find((a) => a.id === piece.angle);
             const product = getProduct(piece.productId);
+            const num = idx + 1;
+            const typeLabel = activeTab === "hook" ? "H" : activeTab === "body" ? "B" : "C";
 
             return (
               <div
@@ -536,6 +538,9 @@ function ConteudoPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between px-3 py-2 border-b border-[#f0ebe3]">
                   <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[10px] font-bold text-[#c8b99a] shrink-0">
+                      {typeLabel}{num}
+                    </span>
                     <span
                       className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0"
                       style={{ backgroundColor: angle?.color + "15", color: angle?.color }}
