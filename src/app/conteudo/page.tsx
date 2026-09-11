@@ -96,6 +96,7 @@ function ConteudoPage() {
   );
   const [selectedAngles, setSelectedAngles] = useState<Angle[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<StatusType | "all">("all");
+  const [selectedFormat, setSelectedFormat] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -122,8 +123,11 @@ function ConteudoPage() {
     if (selectedAngles.length > 0 && !selectedAngles.includes(p.angle))
       return false;
     if (selectedStatus !== "all" && p.status !== selectedStatus) return false;
+    if (selectedFormat !== "all" && p.videoFormat !== selectedFormat) return false;
     return true;
   });
+
+  const VIDEO_FORMATS = ["Review falado", "POV", "B-roll", "Teste ao vivo", "Unboxing", "Comparação", "Demonstração"];
 
   const toggleProduct = (id: string) => {
     setSelectedProducts((prev) =>
@@ -329,6 +333,41 @@ function ConteudoPage() {
             </button>
           ))}
         </div>
+
+        {activeTab === "hook" && (
+          <>
+            <div className="border-t border-[#f0ebe3]" />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider w-16 shrink-0">
+                Formato
+              </span>
+              <button
+                onClick={() => setSelectedFormat("all")}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                  selectedFormat === "all"
+                    ? "bg-[#1a1a2e] text-white"
+                    : "text-[#9ca3af] hover:text-[#6b7280]"
+                }`}
+              >
+                Todos
+              </button>
+              {VIDEO_FORMATS.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setSelectedFormat(f)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                    selectedFormat === f
+                      ? "bg-[#f5f0ea] text-[#1a1a2e] border border-[#c8b99a]"
+                      : "text-[#9ca3af] hover:text-[#6b7280]"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Count */}
