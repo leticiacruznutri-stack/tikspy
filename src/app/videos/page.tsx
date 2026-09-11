@@ -160,9 +160,18 @@ export default function VideosPage() {
     })();
   }, [combos]);
 
+  const getPiece = (id: string): ContentPiece | undefined => {
+    return allPiecesCache.find((p) => p.id === id);
+  };
+
   const getPieceText = (id: string): string => {
-    const piece = allPiecesCache.find((p) => p.id === id);
-    return piece?.text || "...";
+    return getPiece(id)?.text || "...";
+  };
+
+  const getPieceNumber = (id: string, type: string): number => {
+    const ofType = allPiecesCache.filter((p) => p.type === type);
+    const idx = ofType.findIndex((p) => p.id === id);
+    return idx >= 0 ? idx + 1 : 0;
   };
 
   return (
@@ -463,20 +472,38 @@ export default function VideosPage() {
                     </button>
                   </div>
 
-                  {/* Content preview */}
-                  <div className="space-y-1.5 text-xs">
-                    <p className="text-[#1a1a2e]">
-                      <span className="font-medium text-[#3b82f6]">H:</span>{" "}
-                      {getPieceText(combo.hookId).slice(0, 60)}...
-                    </p>
-                    <p className="text-[#1a1a2e]">
-                      <span className="font-medium text-[#8b5cf6]">B:</span>{" "}
-                      {getPieceText(combo.bodyId).slice(0, 60)}...
-                    </p>
-                    <p className="text-[#1a1a2e]">
-                      <span className="font-medium text-[#f59e0b]">C:</span>{" "}
-                      {getPieceText(combo.ctaId).slice(0, 60)}...
-                    </p>
+                  {/* Content completo */}
+                  <div className="space-y-2.5">
+                    {[
+                      { id: combo.hookId, type: "hook", label: "H", color: "#3b82f6" },
+                      { id: combo.bodyId, type: "body", label: "B", color: "#8b5cf6" },
+                      { id: combo.ctaId, type: "cta", label: "C", color: "#f59e0b" },
+                    ].map(({ id, type, label, color }) => {
+                      const piece = getPiece(id);
+                      if (!piece) return null;
+                      const num = getPieceNumber(id, type);
+                      return (
+                        <div key={id} className="rounded-lg bg-[#faf8f5] px-3 py-2 space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold rounded px-1.5 py-0.5 text-white" style={{ backgroundColor: color }}>
+                              {label}{num}
+                            </span>
+                            {piece.headline && (
+                              <span className="text-[11px] italic text-[#b8a88a]">{piece.headline}</span>
+                            )}
+                            {piece.videoFormat && (
+                              <span className="text-[9px] text-[#9ca3af] bg-white rounded-full px-1.5 py-0.5">{piece.videoFormat}</span>
+                            )}
+                          </div>
+                          <p className="text-[12px] text-[#1a1a2e] leading-relaxed">{piece.text}</p>
+                          {piece.visualHook && (
+                            <p className="text-[11px] text-[#9ca3af] leading-snug">
+                              🎬 {piece.visualHook.split(/\.\s/)[0]}.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Status + Schedule */}
