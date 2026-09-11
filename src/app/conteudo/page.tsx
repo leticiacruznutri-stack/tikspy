@@ -491,12 +491,10 @@ function ConteudoPage() {
 
                 {/* Headline (texto na tela) */}
                 {piece.headline && (
-                  <div className="px-3 pt-2.5 pb-1">
-                    <div className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a1a2e] px-2.5 py-1">
-                      <span className="text-[11px] font-bold text-white uppercase tracking-wide">
-                        {piece.headline}
-                      </span>
-                    </div>
+                  <div className="px-3 pt-2.5 pb-0.5">
+                    <p className="text-[12px] font-semibold text-[#b8a88a] italic">
+                      {piece.headline}
+                    </p>
                   </div>
                 )}
 
