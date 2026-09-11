@@ -292,29 +292,123 @@ export async function deleteCombo(id: string): Promise<boolean> {
   return !error;
 }
 
-export async function generateCombos(angle: Angle | null, count: number, productId: string): Promise<VideoCombo[]> {
-  // Pega todas as peças gravadas do produto, sem filtrar por ângulo
-  const allPieces = await getAllPieces(productId);
-  const filmed = allPieces.filter(p => p.status === 'filmed');
+// Formatos que NÃO precisam de body e CTA (são só takes visuais + headline)
+const HOOK_ONLY_FORMATS = ['POV', 'B-roll'];
+// Formatos que precisam de CTA mas não de body
+const HOOK_CTA_FORMATS: string[] = [];
 
-  const hooks = filmed.filter(p => p.type === 'hook');
-  const bodies = filmed.filter(p => p.type === 'body');
-  const ctas = filmed.filter(p => p.type === 'cta');
+function needsBody(format?: string): boolean {
+  if (!format) return true;
+  return !HOOK_ONLY_FORMATS.includes(format) && !HOOK_CTA_FORMATS.includes(format);
+}
 
-  if (hooks.length === 0 || bodies.length === 0 || ctas.length === 0) {
-    return [];
+function needsCta(format?: string): boolean {
+  if (!format) return true;
+  return !HOOK_ONLY_FORMATS.includes(format);
+}
+
+// Extrai palavras significativas de um texto (remove stop words)
+const STOP_WORDS = new Set([
+  'a', 'o', 'e', 'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'nas', 'nos',
+  'um', 'uma', 'uns', 'umas', 'para', 'pra', 'pro', 'com', 'sem', 'por', 'que',
+  'se', 'não', 'nao', 'é', 'esse', 'essa', 'isso', 'este', 'esta', 'isto',
+  'ele', 'ela', 'eles', 'elas', 'eu', 'você', 'voce', 'tu', 'me', 'te',
+  'seu', 'sua', 'seus', 'suas', 'meu', 'minha', 'como', 'mais', 'mas',
+  'muito', 'já', 'ja', 'so', 'só', 'ou', 'nem', 'ai', 'aí', 'aqui',
+  'the', 'is', 'are', 'was', 'be', 'to', 'of', 'and', 'in', 'it', 'you',
+  'that', 'this', 'my', 'your', 'i', 'we', 'they', 'he', 'she',
+]);
+
+function extractKeywords(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !STOP_WORDS.has(w))
+  );
+}
+
+// Pontua o quanto um body/CTA combina com um hook baseado em keywords em comum
+function scoreMatch(hookKeywords: Set<string>, pieceText: string): number {
+  const pieceKeywords = extractKeywords(pieceText);
+  let score = 0;
+  for (const word of hookKeywords) {
+    if (pieceKeywords.has(word)) score++;
+    // Match parcial (prefixo de 4+ chars) — ex: "veda" match "vedação"
+    for (const pw of pieceKeywords) {
+      if (word !== pw && word.length >= 4 && pw.length >= 4) {
+        const prefix = Math.min(word.length, pw.length, 4);
+        if (word.slice(0, prefix) === pw.slice(0, prefix)) {
+          score += 0.5;
+        }
+      }
+    }
   }
+  return score;
+}
 
-  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+function pickBestMatch(hookKeywords: Set<string>, pieces: ContentPiece[]): ContentPiece {
+  if (pieces.length === 0) throw new Error('No pieces');
+  const scored = pieces
+    .map(p => ({ piece: p, score: scoreMatch(hookKeywords, p.text) }))
+    .sort((a, b) => b.score - a.score);
+  // Se o melhor score é 0 (sem match), pega aleatório
+  const topScore = scored[0].score;
+  if (topScore === 0) {
+    return pieces[Math.floor(Math.random() * pieces.length)];
+  }
+  // Pega entre os top matches (empate) aleatoriamente
+  const topMatches = scored.filter(s => s.score === topScore);
+  return topMatches[Math.floor(Math.random() * topMatches.length)].piece;
+}
+
+export async function generateCombos(angle: Angle | null, count: number, productId: string): Promise<VideoCombo[]> {
+  const allPieces = await getAllPieces(productId);
+  const ready = allPieces.filter(p => p.status === 'ready');
+
+  const hooks = ready.filter(p => p.type === 'hook');
+  const bodies = ready.filter(p => p.type === 'body');
+  const ctas = ready.filter(p => p.type === 'cta');
+
+  if (hooks.length === 0) return [];
+
   const generated: VideoCombo[] = [];
+  const usedCombinations = new Set<string>();
 
   for (let i = 0; i < count; i++) {
+    // Pega um hook (rotaciona pra não repetir muito)
+    const hook = hooks[i % hooks.length];
+    const hookKeywords = extractKeywords(hook.text + ' ' + (hook.headline || '') + ' ' + (hook.visualHook || ''));
+
+    const format = hook.videoFormat;
+    let bodyId: string | undefined;
+    let ctaId: string | undefined;
+
+    if (needsBody(format) && bodies.length > 0) {
+      bodyId = pickBestMatch(hookKeywords, bodies).id;
+    }
+
+    if (needsCta(format) && ctas.length > 0) {
+      ctaId = pickBestMatch(hookKeywords, ctas).id;
+    }
+
+    // Evita combos duplicados exatos
+    const comboKey = `${hook.id}::${bodyId || ''}::${ctaId || ''}`;
+    if (usedCombinations.has(comboKey) && i < hooks.length * 2) {
+      // Tenta de novo com outro hook
+      count++;
+      continue;
+    }
+    usedCombinations.add(comboKey);
+
     const combo = await addCombo({
       productId,
-      hookId: pick(hooks).id,
-      bodyId: pick(bodies).id,
-      ctaId: pick(ctas).id,
-      angle: angle || pick(hooks).angle,
+      hookId: hook.id,
+      bodyId,
+      ctaId,
+      angle: angle || hook.angle,
       status: 'planned',
     });
     generated.push(combo);

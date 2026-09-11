@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Zap,
@@ -11,7 +11,12 @@ import {
   Trash2,
   X,
   Video,
-  Film,
+  ChevronDown,
+  Filter,
+  Check,
+  CheckSquare,
+  Square,
+  Minus,
 } from "lucide-react";
 import {
   getHooks,
@@ -23,7 +28,6 @@ import {
   updatePiece,
   deletePiece,
 } from "@/lib/store";
-import { ANGLES } from "@/lib/angles";
 import type { Angle, ContentPiece, Product } from "@/lib/types";
 
 type TabType = "hook" | "body" | "cta";
@@ -43,6 +47,13 @@ const STATUS_COLORS: Record<StatusType, string> = {
   posted: "bg-[#ede9fe] text-[#7c3aed]",
 };
 
+const STATUS_DOT: Record<StatusType, string> = {
+  draft: "bg-[#9ca3af]",
+  ready: "bg-[#2563eb]",
+  filmed: "bg-[#16a34a]",
+  posted: "bg-[#7c3aed]",
+};
+
 const STATUS_CYCLE: StatusType[] = ["draft", "ready", "filmed", "posted"];
 
 const TAB_CONFIG: { type: TabType; label: string; icon: typeof Zap }[] = [
@@ -51,34 +62,112 @@ const TAB_CONFIG: { type: TabType; label: string; icon: typeof Zap }[] = [
   { type: "cta", label: "CTAs", icon: Megaphone },
 ];
 
-function VisualHookPreview({ visualHook }: { visualHook: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const isLong = visualHook.length > 80;
-  const summary = isLong ? visualHook.split(/\.\s/)[0] + "." : visualHook;
+const VIDEO_FORMATS = [
+  "Review falado",
+  "POV",
+  "B-roll",
+  "Teste ao vivo",
+  "Unboxing",
+  "Comparacao",
+  "Demonstracao",
+];
+
+/* ── Dropdown filter component ── */
+function FilterDropdown({
+  label,
+  options,
+  selected,
+  onToggle,
+  renderOption,
+}: {
+  label: string;
+  options: string[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  renderOption?: (value: string) => React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const count = selected.length;
 
   return (
-    <div
-      className={`px-3 py-2 bg-[#faf8f5] border-t border-[#f0ebe3] ${isLong ? "cursor-pointer" : ""}`}
-      onClick={() => isLong && setExpanded(!expanded)}
-    >
-      <div className="flex items-start gap-1.5">
-        <Video size={11} className="text-[#b8a88a] mt-0.5 shrink-0" />
-        <p className="text-[11px] text-[#9ca3af] leading-snug flex-1">
-          {expanded ? visualHook : summary}
-        </p>
-        {isLong && (
-          <span className="text-[10px] text-[#c8b99a] shrink-0 mt-0.5">
-            {expanded ? "−" : "+"}
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+          count > 0
+            ? "bg-[#f5f0ea] border-[#c8b99a] text-[#1a1a2e]"
+            : "border-[#e8e0d4] text-[#9ca3af] hover:text-[#6b7280] hover:border-[#c8b99a]"
+        }`}
+      >
+        {label}
+        {count > 0 && (
+          <span className="rounded-full bg-[#1a1a2e] text-white text-[10px] w-4 h-4 flex items-center justify-center">
+            {count}
           </span>
         )}
-      </div>
+        <ChevronDown size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-20 min-w-[180px] rounded-xl bg-white border border-[#e8e0d4] shadow-lg py-1">
+          {options.map((opt) => {
+            const isSelected = selected.includes(opt);
+            return (
+              <button
+                key={opt}
+                onClick={() => onToggle(opt)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-[#faf8f5] transition-colors"
+              >
+                <span
+                  className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                    isSelected
+                      ? "bg-[#1a1a2e] border-[#1a1a2e]"
+                      : "border-[#d1d5db]"
+                  }`}
+                >
+                  {isSelected && <Check size={10} className="text-white" />}
+                </span>
+                <span className={`flex-1 ${isSelected ? "text-[#1a1a2e] font-medium" : "text-[#6b7280]"}`}>
+                  {renderOption ? renderOption(opt) : opt}
+                </span>
+              </button>
+            );
+          })}
+          {count > 0 && (
+            <>
+              <div className="border-t border-[#f0ebe3] my-1" />
+              <button
+                onClick={() => {
+                  selected.forEach((s) => onToggle(s));
+                }}
+                className="w-full px-3 py-1.5 text-[11px] text-[#9ca3af] hover:text-[#1a1a2e] text-left"
+              >
+                Limpar filtro
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 export default function ConteudoPageWrapper() {
   return (
-    <Suspense fallback={<div className="p-8 text-[#9ca3af]">Carregando...</div>}>
+    <Suspense
+      fallback={<div className="p-8 text-[#9ca3af]">Carregando...</div>}
+    >
       <ConteudoPage />
     </Suspense>
   );
@@ -94,11 +183,12 @@ function ConteudoPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>(
     initialProduct ? [initialProduct] : []
   );
-  const [selectedAngles, setSelectedAngles] = useState<Angle[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<StatusType | "all">("all");
-  const [selectedFormat, setSelectedFormat] = useState<string>("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<StatusType[]>([]);
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
 
   // Form state
   const [formProduct, setFormProduct] = useState("");
@@ -122,14 +212,12 @@ function ConteudoPage() {
     if (p.type !== activeTab) return false;
     if (selectedProducts.length > 0 && !selectedProducts.includes(p.productId))
       return false;
-    if (selectedAngles.length > 0 && !selectedAngles.includes(p.angle))
+    if (selectedStatuses.length > 0 && !selectedStatuses.includes(p.status))
       return false;
-    if (selectedStatus !== "all" && p.status !== selectedStatus) return false;
-    if (selectedFormat !== "all" && p.videoFormat !== selectedFormat) return false;
+    if (selectedFormats.length > 0 && (!p.videoFormat || !selectedFormats.includes(p.videoFormat)))
+      return false;
     return true;
   });
-
-  const VIDEO_FORMATS = ["Review falado", "POV", "B-roll", "Teste ao vivo", "Unboxing", "Comparação", "Demonstração"];
 
   const toggleProduct = (id: string) => {
     setSelectedProducts((prev) =>
@@ -137,9 +225,15 @@ function ConteudoPage() {
     );
   };
 
-  const toggleAngle = (angle: Angle) => {
-    setSelectedAngles((prev) =>
-      prev.includes(angle) ? prev.filter((a) => a !== angle) : [...prev, angle]
+  const toggleStatus = (s: StatusType) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
+  };
+
+  const toggleFormat = (f: string) => {
+    setSelectedFormats((prev) =>
+      prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]
     );
   };
 
@@ -149,6 +243,76 @@ function ConteudoPage() {
     reload();
   };
 
+  const changeProduct = async (piece: ContentPiece, newProductId: string) => {
+    if (newProductId === piece.productId) return;
+    await updatePiece(piece.id, { productId: newProductId });
+    reload();
+  };
+
+  const changeFormat = async (piece: ContentPiece, newFormat: string) => {
+    if (newFormat === (piece.videoFormat || "")) return;
+    await updatePiece(piece.id, { videoFormat: newFormat || undefined });
+    reload();
+  };
+
+  // Bulk selection
+  const toggleCheck = (id: string) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const allFilteredChecked =
+    filtered.length > 0 && filtered.every((p) => checkedIds.has(p.id));
+  const someFilteredChecked =
+    filtered.some((p) => checkedIds.has(p.id)) && !allFilteredChecked;
+
+  const toggleAll = () => {
+    if (allFilteredChecked) {
+      setCheckedIds((prev) => {
+        const next = new Set(prev);
+        filtered.forEach((p) => next.delete(p.id));
+        return next;
+      });
+    } else {
+      setCheckedIds((prev) => {
+        const next = new Set(prev);
+        filtered.forEach((p) => next.add(p.id));
+        return next;
+      });
+    }
+  };
+
+  const getCheckedIds = () =>
+    filtered.filter((p) => checkedIds.has(p.id)).map((p) => p.id);
+
+  const bulkChangeStatus = async (newStatus: StatusType) => {
+    await Promise.all(getCheckedIds().map((id) => updatePiece(id, { status: newStatus })));
+    setCheckedIds(new Set());
+    reload();
+  };
+
+  const bulkChangeProduct = async (newProductId: string) => {
+    await Promise.all(getCheckedIds().map((id) => updatePiece(id, { productId: newProductId })));
+    setCheckedIds(new Set());
+    reload();
+  };
+
+  const bulkChangeFormat = async (newFormat: string) => {
+    await Promise.all(
+      getCheckedIds().map((id) =>
+        updatePiece(id, { videoFormat: newFormat || undefined })
+      )
+    );
+    setCheckedIds(new Set());
+    reload();
+  };
+
+  const checkedCount = filtered.filter((p) => checkedIds.has(p.id)).length;
+
   const handleSubmit = async () => {
     if (!formProduct || !formText.trim()) return;
 
@@ -157,9 +321,11 @@ function ConteudoPage() {
         productId: formProduct,
         angle: formAngle,
         text: formText.trim(),
-        visualHook: activeTab === "hook" ? formVisualHook.trim() || undefined : undefined,
-        headline: activeTab === "hook" ? formHeadline.trim() || undefined : undefined,
-        videoFormat: activeTab === "hook" ? formVideoFormat || undefined : undefined,
+        visualHook:
+          activeTab === "hook" ? formVisualHook.trim() || undefined : undefined,
+        headline:
+          activeTab === "hook" ? formHeadline.trim() || undefined : undefined,
+        videoFormat: formVideoFormat || undefined,
       });
     } else {
       await addPiece({
@@ -167,9 +333,11 @@ function ConteudoPage() {
         type: activeTab,
         angle: formAngle,
         text: formText.trim(),
-        visualHook: activeTab === "hook" ? formVisualHook.trim() || undefined : undefined,
-        headline: activeTab === "hook" ? formHeadline.trim() || undefined : undefined,
-        videoFormat: activeTab === "hook" ? formVideoFormat || undefined : undefined,
+        visualHook:
+          activeTab === "hook" ? formVisualHook.trim() || undefined : undefined,
+        headline:
+          activeTab === "hook" ? formHeadline.trim() || undefined : undefined,
+        videoFormat: formVideoFormat || undefined,
         status: "draft",
       });
     }
@@ -207,12 +375,19 @@ function ConteudoPage() {
 
   const getProduct = (id: string) => products.find((p) => p.id === id);
 
+  const typePrefix = activeTab === "hook" ? "H" : activeTab === "body" ? "B" : "C";
+
+  const hasActiveFilters =
+    selectedProducts.length > 0 ||
+    selectedStatuses.length > 0 ||
+    selectedFormats.length > 0;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1a2e]">Conteúdo</h1>
+          <h1 className="text-2xl font-bold text-[#1a1a2e]">Conteudo</h1>
           <p className="text-[#9ca3af] text-sm mt-1">
             Gerencie hooks, bodies e CTAs de todos os produtos
           </p>
@@ -225,7 +400,8 @@ function ConteudoPage() {
           className="flex items-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors shadow-sm"
         >
           <Plus size={16} />
-          Novo {activeTab === "hook" ? "Hook" : activeTab === "body" ? "Body" : "CTA"}
+          Novo{" "}
+          {activeTab === "hook" ? "Hook" : activeTab === "body" ? "Body" : "CTA"}
         </button>
       </div>
 
@@ -248,152 +424,74 @@ function ConteudoPage() {
       </div>
 
       {/* Filters */}
-      <div className="rounded-2xl bg-white border border-[#e8e0d4] p-4 space-y-3">
-        {/* Product filter */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider w-16 shrink-0">
-            Produto
-          </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <Filter size={14} className="text-[#c8b99a]" />
+
+        <FilterDropdown
+          label="Produto"
+          options={products.map((p) => p.id)}
+          selected={selectedProducts}
+          onToggle={toggleProduct}
+          renderOption={(id) => {
+            const p = getProduct(id);
+            return p ? `${p.emoji} ${p.name}` : id;
+          }}
+        />
+
+        <FilterDropdown
+          label="Status"
+          options={STATUS_CYCLE as unknown as string[]}
+          selected={selectedStatuses as string[]}
+          onToggle={(s) => toggleStatus(s as StatusType)}
+          renderOption={(s) => (
+            <span className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${STATUS_DOT[s as StatusType]}`} />
+              {STATUS_LABELS[s as StatusType]}
+            </span>
+          )}
+        />
+
+        <FilterDropdown
+          label="Formato"
+          options={VIDEO_FORMATS}
+          selected={selectedFormats}
+          onToggle={toggleFormat}
+        />
+
+        {hasActiveFilters && (
           <button
-            onClick={() => setSelectedProducts([])}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-              selectedProducts.length === 0
-                ? "bg-[#1a1a2e] text-white"
-                : "text-[#9ca3af] hover:text-[#6b7280]"
-            }`}
+            onClick={() => {
+              setSelectedProducts([]);
+              setSelectedStatuses([]);
+              setSelectedFormats([]);
+            }}
+            className="text-[11px] text-[#9ca3af] hover:text-[#1a1a2e] ml-1"
           >
-            Todos
+            Limpar tudo
           </button>
-          {products.map((product) => (
-            <button
-              key={product.id}
-              onClick={() => toggleProduct(product.id)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-all border ${
-                selectedProducts.includes(product.id)
-                  ? "bg-[#f5f0ea] border-[#c8b99a] text-[#1a1a2e]"
-                  : "border-transparent text-[#9ca3af] hover:text-[#6b7280]"
-              }`}
-            >
-              {product.emoji} {product.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="border-t border-[#f0ebe3]" />
-
-        {/* Angle filter */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider w-16 shrink-0">
-            Ângulo
-          </span>
-          <button
-            onClick={() => setSelectedAngles([])}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-              selectedAngles.length === 0
-                ? "bg-[#1a1a2e] text-white"
-                : "text-[#9ca3af] hover:text-[#6b7280]"
-            }`}
-          >
-            Todos
-          </button>
-          {ANGLES.map((angle) => (
-            <button
-              key={angle.id}
-              onClick={() => toggleAngle(angle.id)}
-              className="rounded-full px-3 py-1 text-xs font-medium transition-all border"
-              style={
-                selectedAngles.includes(angle.id)
-                  ? { backgroundColor: angle.color + "18", borderColor: angle.color + "50", color: angle.color }
-                  : { borderColor: "transparent", color: "#9ca3af" }
-              }
-            >
-              {angle.emoji} {angle.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="border-t border-[#f0ebe3]" />
-
-        {/* Status filter */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider w-16 shrink-0">
-            Status
-          </span>
-          <button
-            onClick={() => setSelectedStatus("all")}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-              selectedStatus === "all"
-                ? "bg-[#1a1a2e] text-white"
-                : "text-[#9ca3af] hover:text-[#6b7280]"
-            }`}
-          >
-            Todos
-          </button>
-          {STATUS_CYCLE.map((s) => (
-            <button
-              key={s}
-              onClick={() => setSelectedStatus(s)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                selectedStatus === s
-                  ? STATUS_COLORS[s]
-                  : "text-[#9ca3af] hover:text-[#6b7280]"
-              }`}
-            >
-              {STATUS_LABELS[s]}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === "hook" && (
-          <>
-            <div className="border-t border-[#f0ebe3]" />
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider w-16 shrink-0">
-                Formato
-              </span>
-              <button
-                onClick={() => setSelectedFormat("all")}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                  selectedFormat === "all"
-                    ? "bg-[#1a1a2e] text-white"
-                    : "text-[#9ca3af] hover:text-[#6b7280]"
-                }`}
-              >
-                Todos
-              </button>
-              {VIDEO_FORMATS.map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setSelectedFormat(f)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                    selectedFormat === f
-                      ? "bg-[#f5f0ea] text-[#1a1a2e] border border-[#c8b99a]"
-                      : "text-[#9ca3af] hover:text-[#6b7280]"
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-          </>
         )}
+
+        <span className="text-xs text-[#9ca3af] ml-auto">
+          {filtered.length} itens
+        </span>
       </div>
 
-      {/* Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-[#9ca3af]">{filtered.length} itens</p>
-      </div>
-
-      {/* Add/Edit Form */}
-      {showForm && (
+      {/* Add Form (only for new, not edit) */}
+      {showForm && !editingId && (
         <div className="rounded-2xl bg-white border border-[#e8e0d4] p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-[#1a1a2e]">
               {editingId ? "Editar" : "Adicionar"}{" "}
-              {activeTab === "hook" ? "Hook" : activeTab === "body" ? "Body" : "CTA"}
+              {activeTab === "hook"
+                ? "Hook"
+                : activeTab === "body"
+                  ? "Body"
+                  : "CTA"}
             </h3>
-            <button onClick={resetForm} className="text-[#9ca3af] hover:text-[#1a1a2e]">
+            <button
+              onClick={resetForm}
+              className="text-[#9ca3af] hover:text-[#1a1a2e]"
+            >
               <X size={18} />
             </button>
           </div>
@@ -418,16 +516,17 @@ function ConteudoPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-                Ângulo
+                Formato do video
               </label>
               <select
-                value={formAngle}
-                onChange={(e) => setFormAngle(e.target.value as Angle)}
+                value={formVideoFormat}
+                onChange={(e) => setFormVideoFormat(e.target.value)}
                 className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
               >
-                {ANGLES.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.emoji} {a.label}
+                <option value="">Selecionar...</option>
+                {VIDEO_FORMATS.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
                   </option>
                 ))}
               </select>
@@ -447,41 +546,24 @@ function ConteudoPage() {
                 activeTab === "hook"
                   ? "Digite o texto do hook..."
                   : activeTab === "body"
-                  ? "Digite o texto do body..."
-                  : "Digite o texto do CTA..."
+                    ? "Digite o texto do body..."
+                    : "Digite o texto do CTA..."
               }
             />
           </div>
 
           {activeTab === "hook" && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-                    Headline (texto na tela)
-                  </label>
-                  <input
-                    value={formHeadline}
-                    onChange={(e) => setFormHeadline(e.target.value)}
-                    className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-                    placeholder="Frase curta pra tela do vídeo"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-                    Formato do vídeo
-                  </label>
-                  <select
-                    value={formVideoFormat}
-                    onChange={(e) => setFormVideoFormat(e.target.value)}
-                    className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-                  >
-                    <option value="">Selecionar...</option>
-                    {VIDEO_FORMATS.map((f) => (
-                      <option key={f} value={f}>{f}</option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-[#9ca3af] mb-1">
+                  Headline (texto na tela)
+                </label>
+                <input
+                  value={formHeadline}
+                  onChange={(e) => setFormHeadline(e.target.value)}
+                  className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
+                  placeholder="Frase curta pra tela do video"
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#9ca3af] mb-1">
@@ -491,7 +573,7 @@ function ConteudoPage() {
                   value={formVisualHook}
                   onChange={(e) => setFormVisualHook(e.target.value)}
                   className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-                  placeholder="Como gravar esse vídeo..."
+                  placeholder="Como gravar esse video..."
                 />
               </div>
             </>
@@ -515,94 +597,311 @@ function ConteudoPage() {
         </div>
       )}
 
-      {/* Content Grid */}
+      {/* Bulk action bar */}
+      {checkedCount > 0 && (
+        <div className="rounded-xl bg-[#1a1a2e] text-white px-4 py-3 shadow-lg space-y-2.5">
+          <div className="flex items-center gap-3">
+            <CheckSquare size={16} />
+            <span className="text-sm font-medium">
+              {checkedCount} {checkedCount === 1 ? "selecionado" : "selecionados"}
+            </span>
+            <button
+              onClick={() => setCheckedIds(new Set())}
+              className="ml-auto text-white/40 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Bulk status */}
+            <span className="text-[11px] text-white/50 mr-1">Status:</span>
+            {STATUS_CYCLE.map((s) => (
+              <button
+                key={s}
+                onClick={() => bulkChangeStatus(s)}
+                className="rounded-full px-3 py-1 text-[11px] font-semibold transition-all hover:scale-105 bg-white/10 hover:bg-white/20"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${STATUS_DOT[s]}`} />
+                  {STATUS_LABELS[s]}
+                </span>
+              </button>
+            ))}
+
+            <div className="h-4 w-px bg-white/20 mx-1" />
+
+            {/* Bulk product */}
+            <span className="text-[11px] text-white/50 mr-1">Produto:</span>
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) bulkChangeProduct(e.target.value);
+                e.target.value = "";
+              }}
+              className="rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold px-3 py-1 appearance-none cursor-pointer pr-5"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 6px center",
+              }}
+            >
+              <option value="" disabled>Escolher...</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id} className="text-[#1a1a2e]">
+                  {p.emoji} {p.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="h-4 w-px bg-white/20 mx-1" />
+
+            {/* Bulk format */}
+            <span className="text-[11px] text-white/50 mr-1">Formato:</span>
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) bulkChangeFormat(e.target.value === "__none__" ? "" : e.target.value);
+                e.target.value = "";
+              }}
+              className="rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold px-3 py-1 appearance-none cursor-pointer pr-5"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 6px center",
+              }}
+            >
+              <option value="" disabled>Escolher...</option>
+              <option value="__none__" className="text-[#1a1a2e]">Sem formato</option>
+              {VIDEO_FORMATS.map((f) => (
+                <option key={f} value={f} className="text-[#1a1a2e]">
+                  {f}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Content List */}
       {filtered.length === 0 ? (
         <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 text-center">
           <p className="text-[#9ca3af] text-sm">
-            Nenhum conteúdo encontrado com os filtros atuais
+            Nenhum conteudo encontrado com os filtros atuais
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((piece, idx) => {
-            const angle = ANGLES.find((a) => a.id === piece.angle);
-            const product = getProduct(piece.productId);
-            const num = idx + 1;
-            const typeLabel = activeTab === "hook" ? "H" : activeTab === "body" ? "B" : "C";
+        <div className="space-y-3">
+          {/* Select all */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleAll}
+              className="text-[#9ca3af] hover:text-[#1a1a2e] transition-colors"
+            >
+              {allFilteredChecked ? (
+                <CheckSquare size={15} />
+              ) : someFilteredChecked ? (
+                <Minus size={15} className="border border-current rounded-[3px]" />
+              ) : (
+                <Square size={15} />
+              )}
+            </button>
+            <span className="text-[11px] text-[#9ca3af] font-medium">
+              {allFilteredChecked
+                ? "Desmarcar todos"
+                : `Selecionar todos (${filtered.length})`}
+            </span>
+          </div>
 
-            return (
-              <div
-                key={piece.id}
-                className="rounded-xl bg-white border border-[#e8e0d4] hover:border-[#c8b99a] transition-all group overflow-hidden flex flex-col"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-3 py-2 border-b border-[#f0ebe3]">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[10px] font-bold text-[#c8b99a] shrink-0">
-                      {typeLabel}{num}
-                    </span>
-                    <span
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0"
-                      style={{ backgroundColor: angle?.color + "15", color: angle?.color }}
+          {/* List */}
+          <div className="rounded-2xl bg-white border border-[#e8e0d4] overflow-hidden">
+            {filtered.map((piece, idx) => {
+              const product = getProduct(piece.productId);
+              const isChecked = checkedIds.has(piece.id);
+              const isExpanded = expandedId === piece.id;
+
+              return (
+                <div key={piece.id} className="group">
+                  {/* Row — só texto */}
+                  <div
+                    className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[#faf8f5] ${
+                      idx > 0 ? "border-t border-[#f0ebe3]" : ""
+                    } ${isChecked ? "bg-[#f5f0ea]/50" : ""}`}
+                    onClick={() => setExpandedId(isExpanded ? null : piece.id)}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCheck(piece.id);
+                      }}
+                      className="shrink-0 mt-0.5 text-[#c8b99a] hover:text-[#1a1a2e] transition-colors"
                     >
-                      {angle?.emoji} {angle?.label}
+                      {isChecked ? (
+                        <CheckSquare size={14} className="text-[#1a1a2e]" />
+                      ) : (
+                        <Square size={14} />
+                      )}
+                    </button>
+                    <span className="text-[11px] font-bold text-[#c8b99a] shrink-0 mt-0.5 w-6 text-right">
+                      {typePrefix}{idx + 1}
                     </span>
-                    {piece.videoFormat && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#f5f0ea] px-2 py-0.5 text-[10px] text-[#9ca3af] shrink-0">
-                        <Film size={9} />
-                        {piece.videoFormat}
-                      </span>
-                    )}
+                    <p className="text-[13px] text-[#1a1a2e] leading-snug flex-1">
+                      {piece.text}
+                    </p>
+                    <select
+                      value={piece.videoFormat || ""}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        changeFormat(piece, e.target.value);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="rounded-full bg-[#f5f0ea] px-2 py-0.5 text-[10px] text-[#6b7280] appearance-none cursor-pointer pr-4 shrink-0"
+                      style={{
+                        backgroundImage:
+                          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 4px center",
+                      }}
+                    >
+                      <option value="">Formato</option>
+                      {VIDEO_FORMATS.map((f) => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
                     <select
                       value={piece.status}
-                      onChange={(e) => changeStatus(piece, e.target.value as StatusType)}
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0 appearance-none cursor-pointer pr-4 ${STATUS_COLORS[piece.status]}`}
-                      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 4px center" }}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        changeStatus(piece, e.target.value as StatusType);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold appearance-none cursor-pointer pr-4 shrink-0 ${STATUS_COLORS[piece.status]}`}
+                      style={{
+                        backgroundImage:
+                          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 4px center",
+                      }}
                     >
                       {STATUS_CYCLE.map((s) => (
                         <option key={s} value={s}>{STATUS_LABELS[s]}</option>
                       ))}
                     </select>
-                  </div>
-                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <button
-                      onClick={() => startEdit(piece)}
-                      className="rounded p-1 text-[#c8b99a] hover:text-[#1a1a2e]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEdit(piece);
+                      }}
+                      className="rounded p-1 text-[#c8b99a] hover:text-[#1a1a2e] hover:bg-[#f5f0ea] shrink-0"
                     >
                       <Pencil size={12} />
                     </button>
                     <button
-                      onClick={() => handleDelete(piece.id)}
-                      className="rounded p-1 text-[#c8b99a] hover:text-[#fe2c55]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(piece.id);
+                      }}
+                      className="rounded p-1 text-[#c8b99a] hover:text-[#fe2c55] hover:bg-[#fff5f5] shrink-0"
                     >
                       <Trash2 size={12} />
                     </button>
                   </div>
+
+                  {/* Expanded — detalhes */}
+                  {isExpanded && editingId !== piece.id && (
+                    <div className="px-4 pb-3 bg-[#faf8f5] border-t border-[#f0ebe3] space-y-2" style={{ paddingLeft: "calc(1rem + 26px)" }}>
+                      {(piece.headline || piece.visualHook) && (
+                        <div className="space-y-1.5 pt-2">
+                          {piece.headline && (
+                            <p className="text-[12px] italic text-[#b8a88a]">
+                              <span className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mr-2">Headline</span>
+                              {piece.headline}
+                            </p>
+                          )}
+                          {piece.visualHook && (
+                            <p className="text-[12px] text-[#6b7280] leading-snug">
+                              <Video size={10} className="inline mr-1 text-[#9ca3af]" />
+                              {piece.visualHook}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {product && (
+                        <p className="text-[11px] text-[#9ca3af] pt-1">
+                          {product.emoji} {product.name}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Inline edit form */}
+                  {editingId === piece.id && (
+                    <div className="px-4 py-3 bg-[#faf8f5] border-t border-[#f0ebe3] space-y-3" style={{ paddingLeft: "calc(1rem + 26px)" }}>
+                      <textarea
+                        value={formText}
+                        onChange={(e) => setFormText(e.target.value)}
+                        rows={Math.max(5, formText.split("\n").length + 2)}
+                        className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e] resize-y"
+                      />
+                      {activeTab === "hook" && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <input
+                            value={formHeadline}
+                            onChange={(e) => setFormHeadline(e.target.value)}
+                            className="rounded-xl border border-[#e8e0d4] px-3 py-2 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
+                            placeholder="Headline (texto na tela)"
+                          />
+                          <input
+                            value={formVisualHook}
+                            onChange={(e) => setFormVisualHook(e.target.value)}
+                            className="rounded-xl border border-[#e8e0d4] px-3 py-2 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
+                            placeholder="Take visual"
+                          />
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={formProduct}
+                          onChange={(e) => setFormProduct(e.target.value)}
+                          className="rounded-full bg-white border border-[#e8e0d4] px-2.5 py-1 text-[11px] text-[#6b7280]"
+                        >
+                          {products.map((p) => (
+                            <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={formVideoFormat}
+                          onChange={(e) => setFormVideoFormat(e.target.value)}
+                          className="rounded-full bg-white border border-[#e8e0d4] px-2.5 py-1 text-[11px] text-[#6b7280]"
+                        >
+                          <option value="">Formato</option>
+                          {VIDEO_FORMATS.map((f) => (
+                            <option key={f} value={f}>{f}</option>
+                          ))}
+                        </select>
+                        <div className="flex gap-2 ml-auto">
+                          <button
+                            onClick={resetForm}
+                            className="rounded-lg px-3 py-1.5 text-xs text-[#6b7280] hover:bg-white transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={handleSubmit}
+                            disabled={!formProduct || !formText.trim()}
+                            className="rounded-lg bg-[#1a1a2e] text-white px-3 py-1.5 text-xs font-medium hover:bg-[#2a2a3e] transition-colors disabled:opacity-40"
+                          >
+                            Salvar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {/* Headline (texto na tela) */}
-                {piece.headline && (
-                  <div className="px-3 pt-2.5 pb-0.5">
-                    <p className="text-[12px] font-semibold text-[#b8a88a] italic">
-                      {piece.headline}
-                    </p>
-                  </div>
-                )}
-
-                {/* Fala */}
-                <div className="px-3 py-2 flex-1">
-                  <p className="text-[13px] text-[#1a1a2e] leading-snug">
-                    &ldquo;{piece.text}&rdquo;
-                  </p>
-                </div>
-
-                {/* Take Visual */}
-                {piece.visualHook && (
-                  <VisualHookPreview visualHook={piece.visualHook} />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

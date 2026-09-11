@@ -34,8 +34,8 @@ export type VideoCombo = {
   id: string;
   productId: string;
   hookId: string;
-  bodyId: string;
-  ctaId: string;
+  bodyId?: string;
+  ctaId?: string;
   angle: Angle;
   status: 'planned' | 'filming' | 'editing' | 'posted';
   scheduledDate?: string;

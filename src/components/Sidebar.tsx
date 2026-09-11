@@ -8,6 +8,7 @@ import {
   Film,
   Calendar,
   Package,
+  FolderOpen,
   X,
   Menu,
 } from "lucide-react";
@@ -16,7 +17,7 @@ const navItems = [
   { href: "/", label: "Painel", icon: LayoutDashboard },
   { href: "/conteudo", label: "Conteúdo", icon: FileText },
   { href: "/videos", label: "Montar Vídeos", icon: Film },
-  { href: "/agenda", label: "Agenda", icon: Calendar },
+  { href: "/swipe-file", label: "Swipe File", icon: FolderOpen },
 ];
 
 export function Sidebar({

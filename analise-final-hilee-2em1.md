@@ -81,7 +81,7 @@ Linda, útil, preço bom, embalagem bonita. Funciona pra amiga, mãe, filha, col
 -> Hook: "Se você não sabe o que dar de presente, achei a resposta de 80 reais com frete grátis."
 
 **10. Ecossistema de tampas**
-As tampas da 2 em 1 servem nas Hilee maiores (710ml, 946ml, 1183ml). Comprou uma, as tampas acompanham qualquer outra que você comprar depois.
+As tampas da 2 em 1 são compatíveis com outros modelos da Hilee. Comprou uma, as tampas acompanham qualquer outra que você comprar depois.
 -> Hook: "As tampas dessa servem em TODAS as outras Hilee. Comprei uma e agora tô presa no ecossistema."
 
 ---

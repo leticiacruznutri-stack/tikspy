@@ -35,7 +35,7 @@
 6. Tampa com canudo (uso casa/escritorio)
 7. Tampa FreeSip (beber direto ou com canudo — uso rua)
 8. 2 tampas intercambiaveis incluidas no kit
-9. Tampas compativeis com modelos Hilee maiores (710/946/1183ml)
+9. Tampas compativeis com outros modelos Hilee
 10. Vedacao a prova de vazamentos
 11. Material que nao pega gosto
 

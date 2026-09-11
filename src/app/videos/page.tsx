@@ -1,29 +1,30 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, DragEvent } from "react";
 import {
-  Shuffle,
   Trash2,
   Calendar,
   Zap,
   FileText,
   Megaphone,
+  Film,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  GripVertical,
+  X,
+  Plus,
 } from "lucide-react";
 import {
   getProducts,
-  getHooks,
-  getBodies,
-  getCTAs,
+  getAllPieces,
   getCombos,
-  generateCombos,
   addCombo,
   updateCombo,
   deleteCombo,
-  getPiecesByAngle,
-  getAllPieces,
 } from "@/lib/store";
 import { ANGLES } from "@/lib/angles";
-import type { Angle, ContentPiece, Product, VideoCombo } from "@/lib/types";
+import type { ContentPiece, Product, VideoCombo } from "@/lib/types";
 
 const COMBO_STATUS_LABELS: Record<VideoCombo["status"], string> = {
   planned: "Planejado",
@@ -39,105 +40,267 @@ const COMBO_STATUS_COLORS: Record<VideoCombo["status"], string> = {
   posted: "bg-[#22c55e]",
 };
 
+const HOOK_ONLY_FORMATS = ["POV", "B-roll"];
+
+function formatDateISO(d: Date): string {
+  return d.toISOString().split("T")[0];
+}
+
+type SlotType = "hook" | "body" | "cta";
+
+const SLOT_CONFIG: { type: SlotType; label: string; color: string; icon: typeof Zap }[] = [
+  { type: "hook", label: "Hook", color: "#f59e0b", icon: Zap },
+  { type: "body", label: "Body", color: "#3b82f6", icon: FileText },
+  { type: "cta", label: "CTA", color: "#8b5cf6", icon: Megaphone },
+];
+
+/* ── Draggable piece card ── */
+function PieceCard({
+  piece,
+  product,
+  isSelected,
+  onSelect,
+}: {
+  piece: ContentPiece;
+  product?: Product;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const handleDragStart = (e: DragEvent) => {
+    e.dataTransfer.setData("piece-id", piece.id);
+    e.dataTransfer.setData("piece-type", piece.type);
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      onClick={onSelect}
+      className={`rounded-xl border px-3 py-2.5 cursor-grab active:cursor-grabbing transition-all hover:shadow-sm ${
+        isSelected
+          ? "border-[#1a1a2e] bg-[#1a1a2e]/5 ring-1 ring-[#1a1a2e]"
+          : "border-[#e8e0d4] bg-white hover:border-[#c8b99a]"
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        <GripVertical size={14} className="text-[#c8b99a] shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] text-[#1a1a2e] leading-snug">{piece.text}</p>
+          <div className="flex items-center gap-2 mt-1.5">
+            {product && (
+              <span className="text-[10px] text-[#9ca3af]">
+                {product.emoji} {product.name}
+              </span>
+            )}
+            {piece.videoFormat && (
+              <span className="text-[9px] text-[#9ca3af] bg-[#f5f0ea] rounded-full px-1.5 py-0.5">
+                {piece.videoFormat}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Drop slot ── */
+function DropSlot({
+  type,
+  label,
+  color,
+  icon: Icon,
+  piece,
+  product,
+  onDrop,
+  onClear,
+}: {
+  type: SlotType;
+  label: string;
+  color: string;
+  icon: typeof Zap;
+  piece?: ContentPiece | null;
+  product?: Product;
+  onDrop: (pieceId: string) => void;
+  onClear: () => void;
+}) {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: DragEvent) => {
+    const dragType = e.dataTransfer.types.includes("piece-type") ? "ok" : "";
+    if (dragType) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const pieceType = e.dataTransfer.getData("piece-type");
+    const pieceId = e.dataTransfer.getData("piece-id");
+    if (pieceType === type && pieceId) {
+      onDrop(pieceId);
+    }
+  };
+
+  return (
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={() => setIsDragOver(false)}
+      onDrop={handleDrop}
+      className={`rounded-xl border-2 border-dashed p-3 min-h-[80px] transition-all ${
+        piece
+          ? "border-solid border-[#e8e0d4] bg-white"
+          : isDragOver
+            ? "border-[#1a1a2e] bg-[#1a1a2e]/5"
+            : "border-[#e8e0d4] bg-[#faf8f5]"
+      }`}
+    >
+      {piece ? (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <span
+              className="text-[10px] font-bold rounded px-1.5 py-0.5 text-white"
+              style={{ backgroundColor: color }}
+            >
+              {label}
+            </span>
+            <button onClick={onClear} className="text-[#9ca3af] hover:text-[#fe2c55]">
+              <X size={12} />
+            </button>
+          </div>
+          <p className="text-[12px] text-[#1a1a2e] leading-relaxed">{piece.text}</p>
+          {piece.headline && (
+            <p className="text-[11px] italic text-[#b8a88a]">{piece.headline}</p>
+          )}
+          {piece.visualHook && (
+            <p className="text-[11px] text-[#9ca3af]">{"\uD83C\uDFAC"} {piece.visualHook}</p>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full text-center py-2">
+          <Icon size={16} style={{ color }} className="mb-1 opacity-50" />
+          <p className="text-[11px] text-[#9ca3af]">
+            {isDragOver ? `Soltar ${label} aqui` : `Arraste um ${label}`}
+          </p>
+          <p className="text-[10px] text-[#c8b99a]">ou clique na lista</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function VideosPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [allPieces, setAllPieces] = useState<ContentPiece[]>([]);
   const [combos, setCombos] = useState<VideoCombo[]>([]);
 
-  // Generator state
-  const [genProduct, setGenProduct] = useState("");
-  const [genAngle, setGenAngle] = useState<Angle>("estetica");
-  const [genCount, setGenCount] = useState(5);
-
-  // Manual builder state
-  const [manProduct, setManProduct] = useState("");
-  const [manAngle, setManAngle] = useState<Angle>("estetica");
-  const [manHooks, setManHooks] = useState<ContentPiece[]>([]);
-  const [manBodies, setManBodies] = useState<ContentPiece[]>([]);
-  const [manCtas, setManCtas] = useState<ContentPiece[]>([]);
-  const [selectedHook, setSelectedHook] = useState<string | null>(null);
-  const [selectedBody, setSelectedBody] = useState<string | null>(null);
-  const [selectedCta, setSelectedCta] = useState<string | null>(null);
-
-  // Combo filter
+  // Builder state
   const [filterProduct, setFilterProduct] = useState<string>("");
+  const [selectedHookId, setSelectedHookId] = useState<string | null>(null);
+  const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
+  const [selectedCtaId, setSelectedCtaId] = useState<string | null>(null);
+  const [scheduleDate, setScheduleDate] = useState(formatDateISO(new Date()));
 
-  // Generator piece counts
-  const [genHookCount, setGenHookCount] = useState(0);
-  const [genBodyCount, setGenBodyCount] = useState(0);
-  const [genCtaCount, setGenCtaCount] = useState(0);
+  // Agenda state
+  const [agendaDate, setAgendaDate] = useState(formatDateISO(new Date()));
+  const [checkedPieces, setCheckedPieces] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
+  // Combo list filter
+  const [comboFilterProduct, setComboFilterProduct] = useState<string>("");
 
   const reload = useCallback(async () => {
-    const allProducts = await getProducts();
-    setProducts(allProducts);
-    setCombos(await getCombos());
-    if (!genProduct && allProducts.length > 0) setGenProduct(allProducts[0].id);
-    if (!manProduct && allProducts.length > 0) setManProduct(allProducts[0].id);
-  }, [genProduct, manProduct]);
+    const [prods, pieces, allCombos] = await Promise.all([
+      getProducts(),
+      getAllPieces(),
+      getCombos(),
+    ]);
+    setProducts(prods);
+    setAllPieces(pieces);
+    setCombos(allCombos);
+  }, []);
 
   useEffect(() => {
     reload();
   }, [reload]);
 
-  // Update manual columns when product changes
-  useEffect(() => {
-    if (!manProduct) return;
-    (async () => {
-      const all = await getAllPieces(manProduct);
-      setManHooks(all.filter(p => p.type === "hook"));
-      setManBodies(all.filter(p => p.type === "body"));
-      setManCtas(all.filter(p => p.type === "cta"));
-      setSelectedHook(null);
-      setSelectedBody(null);
-      setSelectedCta(null);
-    })();
-  }, [manProduct]);
+  const getPiece = (id: string) => allPieces.find((p) => p.id === id);
+  const getProduct = (id: string) => products.find((p) => p.id === id);
 
-  // Available counts for generator
-  useEffect(() => {
-    if (!genProduct) {
-      setGenHookCount(0);
-      setGenBodyCount(0);
-      setGenCtaCount(0);
-      return;
-    }
-    (async () => {
-      const all = await getAllPieces(genProduct);
-      const filmed = all.filter(p => p.status === "filmed");
-      setGenHookCount(filmed.filter(p => p.type === "hook").length);
-      setGenBodyCount(filmed.filter(p => p.type === "body").length);
-      setGenCtaCount(filmed.filter(p => p.type === "cta").length);
-    })();
-  }, [genProduct]);
+  // Filter pieces for the builder columns
+  const builderPieces = allPieces.filter((p) => {
+    if (filterProduct && p.productId !== filterProduct) return false;
+    return true;
+  });
+  const hooks = builderPieces.filter((p) => p.type === "hook");
+  const bodies = builderPieces.filter((p) => p.type === "body");
+  const ctas = builderPieces.filter((p) => p.type === "cta");
 
-  const handleGenerate = async () => {
-    if (!genProduct) return;
-    await generateCombos(null, genCount, genProduct);
+  // Selected pieces for the builder
+  const selectedHook = selectedHookId ? getPiece(selectedHookId) : null;
+  const selectedBody = selectedBodyId ? getPiece(selectedBodyId) : null;
+  const selectedCta = selectedCtaId ? getPiece(selectedCtaId) : null;
+
+  const hookIsSolo = selectedHook && HOOK_ONLY_FORMATS.includes(selectedHook.videoFormat || "");
+  const canCreate = selectedHook && (hookIsSolo || (selectedBody && selectedCta));
+
+  const handleCreate = async () => {
+    if (!selectedHook) return;
+    const productId = selectedHook.productId;
+    await addCombo({
+      productId,
+      hookId: selectedHook.id,
+      bodyId: hookIsSolo ? undefined : selectedBodyId!,
+      ctaId: hookIsSolo ? undefined : selectedCtaId!,
+      angle: selectedHook.angle,
+      status: "planned",
+      scheduledDate: scheduleDate || undefined,
+    });
+    setSelectedHookId(null);
+    setSelectedBodyId(null);
+    setSelectedCtaId(null);
     reload();
   };
 
-  const handleManualCreate = async () => {
-    if (!manProduct || !selectedHook || !selectedBody || !selectedCta) return;
-    await addCombo({
-      productId: manProduct,
-      hookId: selectedHook,
-      bodyId: selectedBody,
-      ctaId: selectedCta,
-      angle: manAngle,
-      status: "planned",
+  const handleSelect = (piece: ContentPiece) => {
+    if (piece.type === "hook") setSelectedHookId(piece.id === selectedHookId ? null : piece.id);
+    if (piece.type === "body") setSelectedBodyId(piece.id === selectedBodyId ? null : piece.id);
+    if (piece.type === "cta") setSelectedCtaId(piece.id === selectedCtaId ? null : piece.id);
+  };
+
+  const handleSlotDrop = (type: SlotType, pieceId: string) => {
+    if (type === "hook") setSelectedHookId(pieceId);
+    if (type === "body") setSelectedBodyId(pieceId);
+    if (type === "cta") setSelectedCtaId(pieceId);
+  };
+
+  // Agenda logic
+  const agendaCombos = combos.filter((c) => c.scheduledDate === agendaDate);
+
+  // Group agenda combos by product
+  const agendaByProduct = new Map<string, VideoCombo[]>();
+  for (const combo of agendaCombos) {
+    const list = agendaByProduct.get(combo.productId) || [];
+    list.push(combo);
+    agendaByProduct.set(combo.productId, list);
+  }
+
+  // Independent piece checkboxes (local state, not tied to combo status)
+  const togglePieceCheck = (pieceId: string) => {
+    setCheckedPieces((prev) => {
+      const next = new Set(prev);
+      if (next.has(pieceId)) next.delete(pieceId);
+      else next.add(pieceId);
+      return next;
     });
-    setSelectedHook(null);
-    setSelectedBody(null);
-    setSelectedCta(null);
-    reload();
   };
 
   const handleDeleteCombo = async (id: string) => {
     await deleteCombo(id);
-    reload();
-  };
-
-  const handleScheduleDate = async (id: string, date: string) => {
-    await updateCombo(id, { scheduledDate: date });
     reload();
   };
 
@@ -146,273 +309,35 @@ export default function VideosPage() {
     reload();
   };
 
-  const filteredCombos = filterProduct
-    ? combos.filter((c) => c.productId === filterProduct)
+  const toggleSection = (section: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(section)) next.delete(section);
+      else next.add(section);
+      return next;
+    });
+  };
+
+  // All combos (for the full list section)
+  const filteredCombos = comboFilterProduct
+    ? combos.filter((c) => c.productId === comboFilterProduct)
     : combos;
-
-  // Cache all pieces for text lookup
-  const [allPiecesCache, setAllPiecesCache] = useState<ContentPiece[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      const [h, b, c] = await Promise.all([getHooks(), getBodies(), getCTAs()]);
-      setAllPiecesCache([...h, ...b, ...c]);
-    })();
-  }, [combos]);
-
-  const getPiece = (id: string): ContentPiece | undefined => {
-    return allPiecesCache.find((p) => p.id === id);
-  };
-
-  const getPieceText = (id: string): string => {
-    return getPiece(id)?.text || "...";
-  };
-
-  const getPieceNumber = (id: string, type: string): number => {
-    const piece = allPiecesCache.find((p) => p.id === id);
-    if (!piece) return 0;
-    const ofType = allPiecesCache.filter((p) => p.type === type && p.productId === piece.productId);
-    const idx = ofType.findIndex((p) => p.id === id);
-    return idx >= 0 ? idx + 1 : 0;
-  };
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#1a1a2e]">Montar Vídeos</h1>
+        <h1 className="text-2xl font-bold text-[#1a1a2e]">Montar Videos</h1>
         <p className="text-[#9ca3af] text-sm mt-1">
-          Gere combinações ou monte manualmente seus vídeos
+          Arraste ou clique pra montar seus combos de video
         </p>
       </div>
 
-      {/* Section 1: Generator */}
-      <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm space-y-4">
-        <h2 className="text-lg font-semibold text-[#1a1a2e] flex items-center gap-2">
-          <Shuffle size={20} className="text-[#fe2c55]" />
-          Gerador de Combos
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-              Produto
-            </label>
-            <select
-              value={genProduct}
-              onChange={(e) => setGenProduct(e.target.value)}
-              className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-            >
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.emoji} {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-              Quantidade
-            </label>
-            <div className="flex gap-2">
-              {[3, 5, 10].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setGenCount(n)}
-                  className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    genCount === n
-                      ? "bg-[#1a1a2e] text-white"
-                      : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea]"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-3 text-xs text-[#9ca3af]">
-          <span className="flex items-center gap-1">
-            <Zap size={12} className="text-[#3b82f6]" />
-            {genHookCount} hooks
-          </span>
-          <span className="flex items-center gap-1">
-            <FileText size={12} className="text-[#8b5cf6]" />
-            {genBodyCount} bodies
-          </span>
-          <span className="flex items-center gap-1">
-            <Megaphone size={12} className="text-[#f59e0b]" />
-            {genCtaCount} CTAs
-          </span>
-        </div>
-
-        <button
-          onClick={handleGenerate}
-          disabled={genHookCount === 0 || genBodyCount === 0 || genCtaCount === 0}
-          className="rounded-xl bg-[#fe2c55] text-white px-5 py-2.5 text-sm font-medium hover:bg-[#e0264d] transition-colors disabled:opacity-40"
-        >
-          Gerar {genCount} Combos
-        </button>
-      </div>
-
-      {/* Section 2: Manual Builder */}
-      <div className="rounded-2xl bg-white border border-[#e8e0d4] p-6 shadow-sm space-y-4">
-        <h2 className="text-lg font-semibold text-[#1a1a2e]">
-          Montagem Manual
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-[#9ca3af] mb-1">
-              Produto
-            </label>
-            <select
-              value={manProduct}
-              onChange={(e) => setManProduct(e.target.value)}
-              className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-            >
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.emoji} {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Hooks column */}
-          <div>
-            <h4 className="text-xs font-medium text-[#9ca3af] uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Zap size={12} className="text-[#3b82f6]" />
-              Hooks ({manHooks.length})
-            </h4>
-            <div className="space-y-1.5 max-h-60 overflow-y-auto">
-              {manHooks.map((h) => (
-                <button
-                  key={h.id}
-                  onClick={() => setSelectedHook(h.id)}
-                  className={`w-full text-left rounded-xl px-3 py-2 text-xs transition-colors border ${
-                    selectedHook === h.id
-                      ? "bg-[#3b82f6] text-white border-[#3b82f6]"
-                      : "bg-white text-[#1a1a2e] border-[#e8e0d4] hover:bg-[#f5f0ea]"
-                  }`}
-                >
-                  {h.text.length > 80 ? h.text.slice(0, 80) + "..." : h.text}
-                </button>
-              ))}
-              {manHooks.length === 0 && (
-                <p className="text-xs text-[#9ca3af] py-4 text-center">
-                  Nenhum hook
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Bodies column */}
-          <div>
-            <h4 className="text-xs font-medium text-[#9ca3af] uppercase tracking-wider mb-2 flex items-center gap-1">
-              <FileText size={12} className="text-[#8b5cf6]" />
-              Bodies ({manBodies.length})
-            </h4>
-            <div className="space-y-1.5 max-h-60 overflow-y-auto">
-              {manBodies.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => setSelectedBody(b.id)}
-                  className={`w-full text-left rounded-xl px-3 py-2 text-xs transition-colors border ${
-                    selectedBody === b.id
-                      ? "bg-[#8b5cf6] text-white border-[#8b5cf6]"
-                      : "bg-white text-[#1a1a2e] border-[#e8e0d4] hover:bg-[#f5f0ea]"
-                  }`}
-                >
-                  {b.text.length > 80 ? b.text.slice(0, 80) + "..." : b.text}
-                </button>
-              ))}
-              {manBodies.length === 0 && (
-                <p className="text-xs text-[#9ca3af] py-4 text-center">
-                  Nenhum body
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* CTAs column */}
-          <div>
-            <h4 className="text-xs font-medium text-[#9ca3af] uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Megaphone size={12} className="text-[#f59e0b]" />
-              CTAs ({manCtas.length})
-            </h4>
-            <div className="space-y-1.5 max-h-60 overflow-y-auto">
-              {manCtas.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCta(c.id)}
-                  className={`w-full text-left rounded-xl px-3 py-2 text-xs transition-colors border ${
-                    selectedCta === c.id
-                      ? "bg-[#f59e0b] text-white border-[#f59e0b]"
-                      : "bg-white text-[#1a1a2e] border-[#e8e0d4] hover:bg-[#f5f0ea]"
-                  }`}
-                >
-                  {c.text.length > 80 ? c.text.slice(0, 80) + "..." : c.text}
-                </button>
-              ))}
-              {manCtas.length === 0 && (
-                <p className="text-xs text-[#9ca3af] py-4 text-center">
-                  Nenhum CTA
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Preview + Create */}
-        {(selectedHook || selectedBody || selectedCta) && (
-          <div className="rounded-xl border border-[#e8e0d4] p-4 bg-[#FAF7F2] space-y-2">
-            <p className="text-xs font-medium text-[#9ca3af] uppercase tracking-wider">
-              Preview
-            </p>
-            {selectedHook && (
-              <p className="text-xs text-[#1a1a2e]">
-                <span className="font-medium text-[#3b82f6]">Hook:</span>{" "}
-                {getPieceText(selectedHook)}
-              </p>
-            )}
-            {selectedBody && (
-              <p className="text-xs text-[#1a1a2e]">
-                <span className="font-medium text-[#8b5cf6]">Body:</span>{" "}
-                {getPieceText(selectedBody)}
-              </p>
-            )}
-            {selectedCta && (
-              <p className="text-xs text-[#1a1a2e]">
-                <span className="font-medium text-[#f59e0b]">CTA:</span>{" "}
-                {getPieceText(selectedCta)}
-              </p>
-            )}
-          </div>
-        )}
-
-        <button
-          onClick={handleManualCreate}
-          disabled={!selectedHook || !selectedBody || !selectedCta}
-          className="rounded-xl bg-[#1a1a2e] text-white px-5 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors disabled:opacity-40"
-        >
-          Criar Combo
-        </button>
-      </div>
-
-      {/* Section 3: Combos Criados */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#1a1a2e]">
-            Combos Criados ({filteredCombos.length})
-          </h2>
-        </div>
-
-        {/* Product filter chips */}
-        <div className="flex flex-wrap gap-2">
+      {/* ══════════════ BUILDER ══════════════ */}
+      <div className="rounded-2xl bg-white border border-[#e8e0d4] p-5 shadow-sm space-y-4">
+        {/* Product filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-[#9ca3af]">Produto:</span>
           <button
             onClick={() => setFilterProduct("")}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -438,6 +363,304 @@ export default function VideosPage() {
           ))}
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr_auto] gap-4">
+          {/* 3 columns: hooks, bodies, ctas */}
+          {[
+            { items: hooks, type: "hook" as SlotType, label: "Hooks", color: "#f59e0b", icon: Zap, selectedId: selectedHookId },
+            { items: bodies, type: "body" as SlotType, label: "Bodies", color: "#3b82f6", icon: FileText, selectedId: selectedBodyId },
+            { items: ctas, type: "cta" as SlotType, label: "CTAs", color: "#8b5cf6", icon: Megaphone, selectedId: selectedCtaId },
+          ].map(({ items, type, label, color, icon: Icon, selectedId }) => (
+            <div key={type} className="space-y-2">
+              <h3 className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider flex items-center gap-1.5">
+                <Icon size={13} style={{ color }} />
+                {label} ({items.length})
+              </h3>
+              <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
+                {items.map((piece) => (
+                  <PieceCard
+                    key={piece.id}
+                    piece={piece}
+                    product={getProduct(piece.productId)}
+                    isSelected={selectedId === piece.id}
+                    onSelect={() => handleSelect(piece)}
+                  />
+                ))}
+                {items.length === 0 && (
+                  <p className="text-xs text-[#9ca3af] py-6 text-center">
+                    Nenhum {label.toLowerCase().slice(0, -1)}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Assembly zone */}
+          <div className="lg:w-[260px] space-y-3">
+            <h3 className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider flex items-center gap-1.5">
+              <Film size={13} className="text-[#c8b99a]" />
+              Montagem
+            </h3>
+
+            <div className="space-y-2">
+              {SLOT_CONFIG.map(({ type, label, color, icon }) => {
+                const isHookSolo = hookIsSolo && (type === "body" || type === "cta");
+                if (isHookSolo) return null;
+                return (
+                  <DropSlot
+                    key={type}
+                    type={type}
+                    label={label}
+                    color={color}
+                    icon={icon}
+                    piece={type === "hook" ? selectedHook : type === "body" ? selectedBody : selectedCta}
+                    product={
+                      type === "hook" && selectedHook
+                        ? getProduct(selectedHook.productId)
+                        : undefined
+                    }
+                    onDrop={(id) => handleSlotDrop(type, id)}
+                    onClear={() => {
+                      if (type === "hook") setSelectedHookId(null);
+                      if (type === "body") setSelectedBodyId(null);
+                      if (type === "cta") setSelectedCtaId(null);
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {hookIsSolo && (
+              <p className="text-[11px] text-[#9ca3af] italic text-center">
+                Formato {selectedHook?.videoFormat} — so hook
+              </p>
+            )}
+
+            {/* Schedule date */}
+            <div className="flex items-center gap-2">
+              <Calendar size={13} className="text-[#c8b99a]" />
+              <input
+                type="date"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                className="flex-1 text-xs border border-[#e8e0d4] rounded-lg px-2 py-1.5 text-[#1a1a2e] bg-white focus:outline-none focus:border-[#1a1a2e]"
+              />
+            </div>
+
+            <button
+              onClick={handleCreate}
+              disabled={!canCreate}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors disabled:opacity-30"
+            >
+              <Plus size={16} />
+              Criar Combo
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════ AGENDA DO DIA ══════════════ */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-[#1a1a2e]">Agenda do dia</h2>
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-[#c8b99a]" />
+            <input
+              type="date"
+              value={agendaDate}
+              onChange={(e) => setAgendaDate(e.target.value)}
+              className="text-xs border border-[#e8e0d4] rounded-lg px-2 py-1.5 text-[#1a1a2e] bg-white focus:outline-none focus:border-[#1a1a2e]"
+            />
+            {agendaDate === formatDateISO(new Date()) && (
+              <span className="text-[10px] bg-[#fe2c55] text-white rounded-full px-2 py-0.5 font-medium">
+                Hoje
+              </span>
+            )}
+          </div>
+          {agendaCombos.length > 0 && (
+            <span className="text-xs text-[#9ca3af] ml-auto">
+              {agendaCombos.length} video{agendaCombos.length > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+
+        {agendaCombos.length === 0 ? (
+          <div className="rounded-2xl bg-white border border-[#e8e0d4] p-8 shadow-sm text-center">
+            <Film size={32} className="mx-auto mb-2 text-[#9ca3af] opacity-40" />
+            <p className="text-[#9ca3af] text-sm">
+              Nenhum video agendado pra essa data
+            </p>
+            <p className="text-[#c8b99a] text-xs mt-1">
+              Monte combos acima e agende pra esse dia
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {[...agendaByProduct.entries()].map(([productId, productCombos]) => {
+              const product = getProduct(productId);
+              const hookIds = [...new Set(productCombos.map((c) => c.hookId))];
+              const bodyIds = [...new Set(productCombos.map((c) => c.bodyId).filter((id): id is string => !!id))];
+              const ctaIds = [...new Set(productCombos.map((c) => c.ctaId).filter((id): id is string => !!id))];
+
+              const sections = [
+                { ids: hookIds, label: "Hooks", icon: Zap, color: "#f59e0b" },
+                { ids: bodyIds, label: "Bodies", icon: FileText, color: "#3b82f6" },
+                { ids: ctaIds, label: "CTAs", icon: Megaphone, color: "#8b5cf6" },
+              ];
+
+              const totalPieces = hookIds.length + bodyIds.length + ctaIds.length;
+              const checkedCount = [...hookIds, ...bodyIds, ...ctaIds].filter((id) => checkedPieces.has(id)).length;
+
+              return (
+                <div key={productId} className="space-y-2">
+                  {/* Product header */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{product?.emoji}</span>
+                    <span className="text-sm font-semibold text-[#1a1a2e]">{product?.name}</span>
+                    <span className="text-[11px] text-[#9ca3af]">
+                      {productCombos.length} video{productCombos.length > 1 ? "s" : ""}
+                    </span>
+                    <span className="text-[11px] text-[#9ca3af] ml-auto">
+                      {checkedCount}/{totalPieces} gravados
+                    </span>
+                  </div>
+
+                  {/* Checklist sections per type */}
+                  {sections.map(({ ids, label, icon: Icon, color }) => ids.length === 0 ? null : (
+                    <div key={label} className="rounded-2xl bg-white border border-[#e8e0d4] overflow-hidden shadow-sm">
+                      <button
+                        onClick={() => toggleSection(`${productId}-${label}`)}
+                        className="flex items-center gap-2 w-full px-4 py-2.5 text-left hover:bg-[#faf8f5] transition-colors"
+                      >
+                        {expandedSections.has(`${productId}-${label}`) ? (
+                          <ChevronDown size={14} className="text-[#c8b99a]" />
+                        ) : (
+                          <ChevronRight size={14} className="text-[#c8b99a]" />
+                        )}
+                        <Icon size={14} style={{ color }} />
+                        <span className="text-sm font-semibold text-[#1a1a2e]">{label}</span>
+                        <span className="text-[11px] text-[#9ca3af]">({ids.length})</span>
+                      </button>
+                      {expandedSections.has(`${productId}-${label}`) && (
+                        <div className="border-t border-[#f0ebe3]">
+                          {ids.map((pieceId, idx) => {
+                            const piece = getPiece(pieceId);
+                            const checked = checkedPieces.has(pieceId);
+                            return (
+                              <div
+                                key={pieceId}
+                                className={`flex items-start gap-3 px-4 py-2.5 hover:bg-[#faf8f5] transition-colors ${
+                                  idx > 0 ? "border-t border-[#f0ebe3]" : ""
+                                }`}
+                              >
+                                <button
+                                  onClick={() => togglePieceCheck(pieceId)}
+                                  className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors shrink-0 mt-0.5 ${
+                                    checked
+                                      ? "bg-[#22c55e] border-[#22c55e] text-white"
+                                      : "border-[#d1d5db] hover:border-[#1a1a2e]"
+                                  }`}
+                                >
+                                  {checked && <Check size={12} />}
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-[13px] leading-snug ${checked ? "text-[#9ca3af] line-through" : "text-[#1a1a2e]"}`}>
+                                    {piece?.text || "..."}
+                                  </p>
+                                  {piece?.visualHook && (
+                                    <p className="text-[11px] text-[#9ca3af] mt-1">
+                                      {"\uD83C\uDFAC"} {piece.visualHook}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Combos detail */}
+                  <details className="rounded-2xl bg-white border border-[#e8e0d4] overflow-hidden shadow-sm">
+                    <summary className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[#1a1a2e] cursor-pointer hover:bg-[#faf8f5]">
+                      <Film size={14} className="text-[#c8b99a]" />
+                      Combos
+                      <span className="text-[11px] text-[#9ca3af] font-normal">({productCombos.length})</span>
+                    </summary>
+                    <div className="border-t border-[#f0ebe3]">
+                      {productCombos.map((combo, idx) => {
+                        const hook = getPiece(combo.hookId);
+                        const body = combo.bodyId ? getPiece(combo.bodyId) : null;
+                        const cta = combo.ctaId ? getPiece(combo.ctaId) : null;
+                        return (
+                          <div key={combo.id} className={`px-4 py-3 space-y-1.5 ${idx > 0 ? "border-t border-[#f0ebe3]" : ""}`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-[#c8b99a]">V{idx + 1}</span>
+                              <button onClick={() => handleDeleteCombo(combo.id)} className="rounded p-1 text-[#c8b99a] hover:text-[#fe2c55]">
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                            <div className="pl-4 space-y-1">
+                              <p className="text-[12px]">
+                                <span className="text-[#f59e0b] font-semibold">H:</span> {hook?.text || "..."}
+                              </p>
+                              {body && (
+                                <p className="text-[12px]">
+                                  <span className="text-[#3b82f6] font-semibold">B:</span> {body.text}
+                                </p>
+                              )}
+                              {cta && (
+                                <p className="text-[12px]">
+                                  <span className="text-[#8b5cf6] font-semibold">C:</span> {cta.text}
+                                </p>
+                              )}
+                              {!body && !cta && <p className="text-[11px] text-[#9ca3af] italic">Formato solo</p>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </details>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ══════════════ TODOS OS COMBOS ══════════════ */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-[#1a1a2e]">
+          Todos os Combos ({combos.length})
+        </h2>
+
+        {/* Product filter chips */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setComboFilterProduct("")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              comboFilterProduct === ""
+                ? "bg-[#1a1a2e] text-white"
+                : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea]"
+            }`}
+          >
+            Todos
+          </button>
+          {products.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setComboFilterProduct(p.id)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                comboFilterProduct === p.id
+                  ? "bg-[#1a1a2e] text-white"
+                  : "bg-white border border-[#e8e0d4] text-[#6b7280] hover:bg-[#f5f0ea]"
+              }`}
+            >
+              {p.emoji} {p.name}
+            </button>
+          ))}
+        </div>
+
         {filteredCombos.length === 0 ? (
           <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 shadow-sm text-center">
             <p className="text-[#9ca3af] text-sm">Nenhum combo criado ainda</p>
@@ -447,24 +670,25 @@ export default function VideosPage() {
             {filteredCombos.map((combo) => {
               const product = products.find((p) => p.id === combo.productId);
               const angle = ANGLES.find((a) => a.id === combo.angle);
+              const hook = getPiece(combo.hookId);
+              const body = combo.bodyId ? getPiece(combo.bodyId) : null;
+              const cta = combo.ctaId ? getPiece(combo.ctaId) : null;
 
               return (
                 <div
                   key={combo.id}
                   className="rounded-2xl bg-white border border-[#e8e0d4] p-4 shadow-sm space-y-3"
                 >
-                  {/* Top badges */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 rounded-lg bg-[#FAF7F2] px-2 py-1 text-xs font-medium text-[#1a1a2e]">
                         {product?.emoji} {product?.name}
                       </span>
-                      <span
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                        style={{ backgroundColor: angle?.color }}
-                      >
-                        {angle?.emoji} {angle?.label}
-                      </span>
+                      {combo.scheduledDate && (
+                        <span className="text-[10px] text-[#9ca3af]">
+                          {combo.scheduledDate}
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={() => handleDeleteCombo(combo.id)}
@@ -474,50 +698,36 @@ export default function VideosPage() {
                     </button>
                   </div>
 
-                  {/* Content completo */}
-                  <div className="space-y-2.5">
-                    {[
-                      { id: combo.hookId, type: "hook", label: "H", color: "#3b82f6" },
-                      { id: combo.bodyId, type: "body", label: "B", color: "#8b5cf6" },
-                      { id: combo.ctaId, type: "cta", label: "C", color: "#f59e0b" },
-                    ].map(({ id, type, label, color }) => {
-                      const piece = getPiece(id);
-                      if (!piece) return null;
-                      const num = getPieceNumber(id, type);
-                      return (
-                        <div key={id} className="rounded-lg bg-[#faf8f5] px-3 py-2 space-y-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold rounded px-1.5 py-0.5 text-white" style={{ backgroundColor: color }}>
-                              {label}{num}
-                            </span>
-                            {piece.headline && (
-                              <span className="text-[11px] italic text-[#b8a88a]">{piece.headline}</span>
-                            )}
-                            {piece.videoFormat && (
-                              <span className="text-[9px] text-[#9ca3af] bg-white rounded-full px-1.5 py-0.5">{piece.videoFormat}</span>
-                            )}
-                          </div>
-                          <p className="text-[12px] text-[#1a1a2e] leading-relaxed">{piece.text}</p>
-                          {piece.visualHook && (
-                            <p className="text-[11px] text-[#9ca3af] leading-snug">
-                              🎬 {piece.visualHook.split(/\.\s/)[0]}.
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
+                  <div className="space-y-2">
+                    {hook && (
+                      <div className="rounded-lg bg-[#faf8f5] px-3 py-2 space-y-1">
+                        <span className="text-[10px] font-bold rounded px-1.5 py-0.5 text-white bg-[#f59e0b]">H</span>
+                        <p className="text-[12px] text-[#1a1a2e] leading-relaxed">{hook.text}</p>
+                        {hook.headline && <p className="text-[11px] italic text-[#b8a88a]">{hook.headline}</p>}
+                        {hook.visualHook && <p className="text-[11px] text-[#9ca3af]">{"\uD83C\uDFAC"} {hook.visualHook}</p>}
+                      </div>
+                    )}
+                    {body && (
+                      <div className="rounded-lg bg-[#faf8f5] px-3 py-2 space-y-1">
+                        <span className="text-[10px] font-bold rounded px-1.5 py-0.5 text-white bg-[#3b82f6]">B</span>
+                        <p className="text-[12px] text-[#1a1a2e] leading-relaxed">{body.text}</p>
+                      </div>
+                    )}
+                    {cta && (
+                      <div className="rounded-lg bg-[#faf8f5] px-3 py-2 space-y-1">
+                        <span className="text-[10px] font-bold rounded px-1.5 py-0.5 text-white bg-[#8b5cf6]">C</span>
+                        <p className="text-[12px] text-[#1a1a2e] leading-relaxed">{cta.text}</p>
+                      </div>
+                    )}
+                    {!body && !cta && (
+                      <p className="text-[11px] text-[#9ca3af] italic px-1">Formato solo — so hook com takes visuais</p>
+                    )}
                   </div>
 
-                  {/* Status + Schedule */}
                   <div className="flex items-center justify-between pt-2 border-t border-[#e8e0d4]">
                     <select
                       value={combo.status}
-                      onChange={(e) =>
-                        handleStatusChange(
-                          combo.id,
-                          e.target.value as VideoCombo["status"]
-                        )
-                      }
+                      onChange={(e) => handleStatusChange(combo.id, e.target.value as VideoCombo["status"])}
                       className={`rounded-full px-2.5 py-1 text-xs font-medium text-white border-0 appearance-none cursor-pointer ${COMBO_STATUS_COLORS[combo.status]}`}
                     >
                       <option value="planned">Planejado</option>
@@ -530,9 +740,7 @@ export default function VideosPage() {
                       <input
                         type="date"
                         value={combo.scheduledDate || ""}
-                        onChange={(e) =>
-                          handleScheduleDate(combo.id, e.target.value)
-                        }
+                        onChange={(e) => updateCombo(combo.id, { scheduledDate: e.target.value }).then(reload)}
                         className="text-xs border border-[#e8e0d4] rounded-lg px-2 py-1 text-[#1a1a2e] bg-white focus:outline-none focus:border-[#1a1a2e]"
                       />
                     </div>
