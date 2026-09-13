@@ -26,6 +26,7 @@ export type ContentPiece = {
   visualHook?: string;
   headline?: string;
   videoFormat?: string;
+  referenceUrl?: string;
   status: 'draft' | 'ready' | 'filmed' | 'posted';
   createdAt: string;
 };

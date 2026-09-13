@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   FolderOpen,
+  FolderClosed,
   Play,
   ExternalLink,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Clock,
   Tag,
   Zap,
@@ -90,6 +92,7 @@ function getThumbnailUrl(fileId: string | null): string {
 export default function SwipeFilePage() {
   const [refs, setRefs] = useState<SwipeRef[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [openFolder, setOpenFolder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProduct, setFilterProduct] = useState("");
   const [filterHookType, setFilterHookType] = useState("");
@@ -108,15 +111,23 @@ export default function SwipeFilePage() {
     reload();
   }, [reload]);
 
-  // Unique values for filters
-  const products = [...new Set(refs.map((r) => r.product))].sort();
-  const hookTypes = [...new Set(refs.map((r) => r.hook_type).filter(Boolean))].sort() as string[];
-
   // Group by creator
-  const creators = [...new Set(refs.map((r) => r.creator_name))];
+  const groupedByCreator = new Map<string, SwipeRef[]>();
+  for (const r of refs) {
+    const list = groupedByCreator.get(r.creator_name) || [];
+    list.push(r);
+    groupedByCreator.set(r.creator_name, list);
+  }
 
-  // Filter
-  const filtered = refs.filter((r) => {
+  // Get the current folder's refs
+  const folderRefs = openFolder ? groupedByCreator.get(openFolder) || [] : [];
+
+  // Unique values for filters (scoped to open folder)
+  const products = [...new Set(folderRefs.map((r) => r.product))].sort();
+  const hookTypes = [...new Set(folderRefs.map((r) => r.hook_type).filter(Boolean))].sort() as string[];
+
+  // Filter (inside folder)
+  const filtered = folderRefs.filter((r) => {
     if (filterProduct && r.product !== filterProduct) return false;
     if (filterHookType && r.hook_type !== filterHookType) return false;
     if (searchQuery) {
@@ -132,14 +143,6 @@ export default function SwipeFilePage() {
     return true;
   });
 
-  // Group filtered by creator
-  const groupedByCreator = new Map<string, SwipeRef[]>();
-  for (const ref of filtered) {
-    const list = groupedByCreator.get(ref.creator_name) || [];
-    list.push(ref);
-    groupedByCreator.set(ref.creator_name, list);
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -148,16 +151,88 @@ export default function SwipeFilePage() {
     );
   }
 
+  // ── Folder index view ──
+  if (!openFolder) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a2e] flex items-center gap-2">
+            <FolderOpen size={24} />
+            Swipe File
+          </h1>
+          <p className="text-[#9ca3af] text-sm mt-1">
+            {refs.length} videos de referencia analisados
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...groupedByCreator.entries()].map(([creator, creatorRefs]) => {
+            // Get first ref with a thumbnail for the folder cover
+            const cover = creatorRefs.find((r) => r.drive_file_id);
+            const uniqueProducts = [...new Set(creatorRefs.map((r) => r.product))];
+            return (
+              <button
+                key={creator}
+                onClick={() => {
+                  setOpenFolder(creator);
+                  setSearchQuery("");
+                  setFilterProduct("");
+                  setFilterHookType("");
+                  setExpandedId(null);
+                }}
+                className="group rounded-2xl border border-[#e8e0d4] bg-white shadow-sm hover:shadow-md hover:border-[#c8b99a] transition-all overflow-hidden text-left"
+              >
+                {/* Folder info */}
+                <div className="px-4 py-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <FolderClosed size={18} className="text-[#c8b99a]" />
+                      <h3 className="font-semibold text-sm text-[#1a1a2e] truncate">{creator}</h3>
+                    </div>
+                    <span className="text-[11px] text-[#9ca3af] font-medium">{creatorRefs.length} videos</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {uniqueProducts.slice(0, 3).map((p) => (
+                      <span key={p} className="text-[10px] bg-[#f5f0ea] text-[#6b7280] rounded-full px-2 py-0.5">
+                        {p}
+                      </span>
+                    ))}
+                    {uniqueProducts.length > 3 && (
+                      <span className="text-[10px] text-[#9ca3af]">
+                        +{uniqueProducts.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Inside a folder ──
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with back button */}
       <div>
+        <button
+          onClick={() => {
+            setOpenFolder(null);
+            setExpandedId(null);
+          }}
+          className="flex items-center gap-1.5 text-sm text-[#9ca3af] hover:text-[#1a1a2e] transition-colors mb-2"
+        >
+          <ChevronLeft size={16} />
+          Voltar
+        </button>
         <h1 className="text-2xl font-bold text-[#1a1a2e] flex items-center gap-2">
-          <FolderOpen size={24} />
-          Swipe File
+          <FolderOpen size={24} className="text-[#f59e0b]" />
+          {openFolder}
         </h1>
         <p className="text-[#9ca3af] text-sm mt-1">
-          {refs.length} videos de referencia analisados
+          {folderRefs.length} videos de referencia
         </p>
       </div>
 
@@ -221,22 +296,9 @@ export default function SwipeFilePage() {
         </span>
       </div>
 
-      {/* Creator folders */}
-      {[...groupedByCreator.entries()].map(([creator, creatorRefs]) => (
-        <div key={creator} className="space-y-3">
-          <div className="flex items-center gap-2">
-            <FolderOpen size={18} className="text-[#f59e0b]" />
-            <h2 className="text-lg font-semibold text-[#1a1a2e]">
-              {creator}
-            </h2>
-            <span className="text-xs text-[#9ca3af] bg-[#f5f0ea] rounded-full px-2 py-0.5">
-              {creatorRefs.length} videos
-            </span>
-          </div>
-
-          {/* Video grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {creatorRefs.map((ref) => {
+      {/* Video grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filtered.map((ref) => {
               const isExpanded = expandedId === ref.id;
               const hookColor =
                 HOOK_TYPE_COLORS[ref.hook_type || ""] || "#9ca3af";
@@ -474,9 +536,7 @@ export default function SwipeFilePage() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      ))}
+      </div>
 
       {filtered.length === 0 && (
         <div className="rounded-2xl bg-white border border-[#e8e0d4] p-12 text-center">

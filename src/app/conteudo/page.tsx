@@ -17,6 +17,7 @@ import {
   CheckSquare,
   Square,
   Minus,
+  Scissors,
 } from "lucide-react";
 import {
   getHooks,
@@ -72,6 +73,77 @@ const VIDEO_FORMATS = [
   "Comparacao",
   "Demonstracao",
 ];
+
+/* ── Product select with images ── */
+function ProductSelectForm({
+  products,
+  value,
+  onChange,
+  placeholder = "Selecionar...",
+  className = "",
+}: {
+  products: Product[];
+  value: string;
+  onChange: (id: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = products.find((p) => p.id === value);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2 rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-left hover:border-[#c8b99a] transition-colors"
+      >
+        {selected ? (
+          <>
+            {selected.imageUrl ? (
+              <img src={selected.imageUrl} alt={selected.name} className="w-6 h-6 rounded-lg object-cover" />
+            ) : (
+              <span>{selected.emoji}</span>
+            )}
+            <span className="flex-1 text-[#1a1a2e]">{selected.name}</span>
+          </>
+        ) : (
+          <span className="flex-1 text-[#9ca3af]">{placeholder}</span>
+        )}
+        <ChevronDown size={14} className={`text-[#9ca3af] transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-xl border border-[#e8e0d4] bg-white shadow-lg py-1 max-h-60 overflow-y-auto">
+          {products.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => { onChange(p.id); setOpen(false); }}
+              className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-[#faf8f5] transition-colors ${value === p.id ? "font-semibold text-[#1a1a2e] bg-[#faf8f5]" : "text-[#6b7280]"}`}
+            >
+              {p.imageUrl ? (
+                <img src={p.imageUrl} alt={p.name} className="w-6 h-6 rounded-lg object-cover" />
+              ) : (
+                <span>{p.emoji}</span>
+              )}
+              {p.name}
+              {value === p.id && <Check size={14} className="ml-auto text-[#1a1a2e]" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ── Dropdown filter component ── */
 function FilterDropdown({
@@ -200,6 +272,79 @@ function ConteudoPage() {
   const [formVideoFormat, setFormVideoFormat] = useState("");
 
   const [usedPieceIds, setUsedPieceIds] = useState<Set<string>>(new Set());
+
+  // Full copy paste mode
+  const [showFullCopy, setShowFullCopy] = useState(false);
+  const [fullCopyRaw, setFullCopyRaw] = useState("");
+  const [splitHook, setSplitHook] = useState("");
+  const [splitBody, setSplitBody] = useState("");
+  const [splitCta, setSplitCta] = useState("");
+  const [fullCopyProduct, setFullCopyProduct] = useState("");
+  const [fullCopyFormat, setFullCopyFormat] = useState("");
+
+  const autoSplitCopy = (text: string) => {
+    setFullCopyRaw(text);
+    const paragraphs = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    if (paragraphs.length === 0) {
+      setSplitHook("");
+      setSplitBody("");
+      setSplitCta("");
+    } else if (paragraphs.length === 1) {
+      setSplitHook(paragraphs[0]);
+      setSplitBody("");
+      setSplitCta("");
+    } else if (paragraphs.length === 2) {
+      setSplitHook(paragraphs[0]);
+      setSplitBody("");
+      setSplitCta(paragraphs[1]);
+    } else {
+      setSplitHook(paragraphs[0]);
+      setSplitBody(paragraphs.slice(1, -1).join("\n\n"));
+      setSplitCta(paragraphs[paragraphs.length - 1]);
+    }
+  };
+
+  const handleFullCopySubmit = async () => {
+    if (!fullCopyProduct) return;
+    const promises: Promise<unknown>[] = [];
+    if (splitHook.trim()) {
+      promises.push(addPiece({
+        productId: fullCopyProduct,
+        type: "hook",
+        angle: "estetica" as Angle,
+        text: splitHook.trim(),
+        videoFormat: fullCopyFormat || undefined,
+        status: "draft",
+      }));
+    }
+    if (splitBody.trim()) {
+      promises.push(addPiece({
+        productId: fullCopyProduct,
+        type: "body",
+        angle: "estetica" as Angle,
+        text: splitBody.trim(),
+        videoFormat: fullCopyFormat || undefined,
+        status: "draft",
+      }));
+    }
+    if (splitCta.trim()) {
+      promises.push(addPiece({
+        productId: fullCopyProduct,
+        type: "cta",
+        angle: "estetica" as Angle,
+        text: splitCta.trim(),
+        videoFormat: fullCopyFormat || undefined,
+        status: "draft",
+      }));
+    }
+    await Promise.all(promises);
+    setShowFullCopy(false);
+    setFullCopyRaw("");
+    setSplitHook("");
+    setSplitBody("");
+    setSplitCta("");
+    reload();
+  };
 
   const reload = useCallback(async () => {
     const [prods, allP, combos] = await Promise.all([
@@ -391,7 +536,20 @@ function ConteudoPage() {
 
   const getProduct = (id: string) => products.find((p) => p.id === id);
 
-  const typePrefix = activeTab === "hook" ? "H" : activeTab === "body" ? "B" : "C";
+  // Stable numbering per product+type (not affected by filters)
+  const pieceNumberMap = (() => {
+    const map = new Map<string, string>();
+    const counters = new Map<string, number>(); // key: "productId-type"
+    const prefix = (type: string) => type === "hook" ? "H" : type === "body" ? "B" : "C";
+    for (const p of pieces) {
+      const key = `${p.productId}-${p.type}`;
+      const n = (counters.get(key) || 0) + 1;
+      counters.set(key, n);
+      map.set(p.id, `${prefix(p.type)}${n}`);
+    }
+    return map;
+  })();
+  const pieceLabel = (id: string) => pieceNumberMap.get(id) || "";
 
   const hasActiveFilters =
     selectedProducts.length > 0 ||
@@ -408,18 +566,135 @@ function ConteudoPage() {
             Gerencie hooks, bodies e CTAs de todos os produtos
           </p>
         </div>
-        <button
-          onClick={() => {
-            setFormProduct(products[0]?.id || "");
-            setShowForm(true);
-          }}
-          className="flex items-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors shadow-sm"
-        >
-          <Plus size={16} />
-          Novo{" "}
-          {activeTab === "hook" ? "Hook" : activeTab === "body" ? "Body" : "CTA"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setFullCopyProduct(products[0]?.id || "");
+              setFullCopyFormat("");
+              setShowFullCopy(true);
+            }}
+            className="flex items-center gap-2 rounded-xl border border-[#e8e0d4] text-[#1a1a2e] px-4 py-2.5 text-sm font-medium hover:bg-[#f5f0ea] transition-colors"
+          >
+            <Scissors size={16} />
+            Colar copy completa
+          </button>
+          <button
+            onClick={() => {
+              setFormProduct(products[0]?.id || "");
+              setShowForm(true);
+            }}
+            className="flex items-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors shadow-sm"
+          >
+            <Plus size={16} />
+            Novo{" "}
+            {activeTab === "hook" ? "Hook" : activeTab === "body" ? "Body" : "CTA"}
+          </button>
+        </div>
       </div>
+
+      {/* Full copy paste panel */}
+      {showFullCopy && (
+        <div className="rounded-2xl bg-white border border-[#e8e0d4] p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2">
+              <Scissors size={16} className="text-[#c8b99a]" />
+              Colar copy completa
+            </h3>
+            <button onClick={() => setShowFullCopy(false)} className="text-[#9ca3af] hover:text-[#1a1a2e]">
+              <X size={18} />
+            </button>
+          </div>
+
+          <p className="text-[11px] text-[#9ca3af]">
+            Cole o texto completo do video. Separe hook, body e CTA com uma linha em branco entre eles.
+          </p>
+
+          {/* Product + Format */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-[#9ca3af] mb-1">Produto</label>
+              <ProductSelectForm products={products} value={fullCopyProduct} onChange={setFullCopyProduct} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#9ca3af] mb-1">Formato</label>
+              <select
+                value={fullCopyFormat}
+                onChange={(e) => setFullCopyFormat(e.target.value)}
+                className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
+              >
+                <option value="">Selecionar...</option>
+                {VIDEO_FORMATS.map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Raw paste area */}
+          <div>
+            <label className="block text-xs font-medium text-[#9ca3af] mb-1">Texto completo</label>
+            <textarea
+              value={fullCopyRaw}
+              onChange={(e) => autoSplitCopy(e.target.value)}
+              rows={6}
+              className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e] resize-y"
+              placeholder={"Cole aqui o texto completo...\n\nPrimeiro paragrafo vira o Hook\n\nParagrafos do meio viram o Body\n\nUltimo paragrafo vira o CTA"}
+            />
+          </div>
+
+          {/* Split preview */}
+          {(splitHook || splitBody || splitCta) && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider">Preview da separacao</p>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-medium mb-1">
+                  <span className="text-[10px] font-bold rounded px-1.5 py-0.5 text-white bg-[#f59e0b]">H</span>
+                  <span className="text-[#9ca3af]">Hook</span>
+                </label>
+                <textarea
+                  value={splitHook}
+                  onChange={(e) => setSplitHook(e.target.value)}
+                  rows={Math.max(2, splitHook.split("\n").length)}
+                  className="w-full rounded-lg border border-[#f59e0b]/30 bg-[#fffbeb] px-3 py-2 text-sm text-[#1a1a2e] focus:outline-none focus:border-[#f59e0b] resize-y"
+                />
+              </div>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-medium mb-1">
+                  <span className="text-[10px] font-bold rounded px-1.5 py-0.5 text-white bg-[#3b82f6]">B</span>
+                  <span className="text-[#9ca3af]">Body</span>
+                </label>
+                <textarea
+                  value={splitBody}
+                  onChange={(e) => setSplitBody(e.target.value)}
+                  rows={Math.max(3, splitBody.split("\n").length)}
+                  className="w-full rounded-lg border border-[#3b82f6]/30 bg-[#eff6ff] px-3 py-2 text-sm text-[#1a1a2e] focus:outline-none focus:border-[#3b82f6] resize-y"
+                />
+              </div>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-medium mb-1">
+                  <span className="text-[10px] font-bold rounded px-1.5 py-0.5 text-white bg-[#8b5cf6]">C</span>
+                  <span className="text-[#9ca3af]">CTA</span>
+                </label>
+                <textarea
+                  value={splitCta}
+                  onChange={(e) => setSplitCta(e.target.value)}
+                  rows={Math.max(2, splitCta.split("\n").length)}
+                  className="w-full rounded-lg border border-[#8b5cf6]/30 bg-[#f5f3ff] px-3 py-2 text-sm text-[#1a1a2e] focus:outline-none focus:border-[#8b5cf6] resize-y"
+                />
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={handleFullCopySubmit}
+            disabled={!fullCopyProduct || (!splitHook.trim() && !splitBody.trim() && !splitCta.trim())}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1a1a2e] text-white px-4 py-2.5 text-sm font-medium hover:bg-[#2a2a3e] transition-colors disabled:opacity-30"
+          >
+            <Plus size={16} />
+            Criar {[splitHook, splitBody, splitCta].filter((s) => s.trim()).length} peca{[splitHook, splitBody, splitCta].filter((s) => s.trim()).length !== 1 ? "s" : ""}
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-xl bg-[#f5f0ea]/60 border border-[#e8e0d4] p-1">
@@ -450,7 +725,17 @@ function ConteudoPage() {
           onToggle={toggleProduct}
           renderOption={(id) => {
             const p = getProduct(id);
-            return p ? `${p.emoji} ${p.name}` : id;
+            if (!p) return id;
+            return (
+              <span className="inline-flex items-center gap-1.5">
+                {p.imageUrl ? (
+                  <img src={p.imageUrl} alt={p.name} className="w-5 h-5 rounded object-cover" />
+                ) : (
+                  p.emoji
+                )}
+                {p.name}
+              </span>
+            );
           }}
         />
 
@@ -517,18 +802,7 @@ function ConteudoPage() {
               <label className="block text-xs font-medium text-[#9ca3af] mb-1">
                 Produto
               </label>
-              <select
-                value={formProduct}
-                onChange={(e) => setFormProduct(e.target.value)}
-                className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e]"
-              >
-                <option value="">Selecionar...</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.emoji} {p.name}
-                  </option>
-                ))}
-              </select>
+              <ProductSelectForm products={products} value={formProduct} onChange={setFormProduct} />
             </div>
             <div>
               <label className="block text-xs font-medium text-[#9ca3af] mb-1">
@@ -556,8 +830,8 @@ function ConteudoPage() {
             <textarea
               value={formText}
               onChange={(e) => setFormText(e.target.value)}
-              rows={3}
-              className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e] resize-none"
+              rows={Math.max(activeTab === "body" ? 6 : 3, formText.split("\n").length + 1)}
+              className="w-full rounded-xl border border-[#e8e0d4] px-3 py-2.5 text-sm bg-white text-[#1a1a2e] focus:outline-none focus:border-[#1a1a2e] resize-y"
               placeholder={
                 activeTab === "hook"
                   ? "Digite o texto do hook..."
@@ -760,10 +1034,10 @@ function ConteudoPage() {
                         <Square size={14} />
                       )}
                     </button>
-                    <span className="text-[11px] font-bold text-[#c8b99a] shrink-0 mt-0.5 w-6 text-right">
-                      {typePrefix}{idx + 1}
+                    <span className="text-[11px] font-bold text-[#c8b99a] shrink-0 mt-0.5 w-8 text-right">
+                      {pieceLabel(piece.id)}
                     </span>
-                    <p className="text-[13px] text-[#1a1a2e] leading-snug flex-1">
+                    <p className="text-[13px] text-[#1a1a2e] leading-snug flex-1 whitespace-pre-wrap">
                       {isUsed && (
                         <span className="inline-block w-2 h-2 rounded-full bg-[#f59e0b] mr-1.5 -mt-0.5 align-middle" title="Usado em combo" />
                       )}
@@ -789,6 +1063,18 @@ function ConteudoPage() {
                         <option key={f} value={f}>{f}</option>
                       ))}
                     </select>
+                    {piece.referenceUrl && (
+                      <a
+                        href={piece.referenceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded p-1 text-[#3b82f6] hover:bg-[#eff6ff] shrink-0"
+                        title="Ver referência no Drive"
+                      >
+                        <Video size={12} />
+                      </a>
+                    )}
                     <select
                       value={piece.status}
                       onChange={(e) => {
@@ -848,8 +1134,13 @@ function ConteudoPage() {
                         </div>
                       )}
                       {product && (
-                        <p className="text-[11px] text-[#9ca3af] pt-1">
-                          {product.emoji} {product.name}
+                        <p className="inline-flex items-center gap-1 text-[11px] text-[#9ca3af] pt-1">
+                          {product.imageUrl ? (
+                            <img src={product.imageUrl} alt={product.name} className="w-4 h-4 rounded object-cover" />
+                          ) : (
+                            product.emoji
+                          )}
+                          {product.name}
                         </p>
                       )}
                     </div>
@@ -881,15 +1172,12 @@ function ConteudoPage() {
                         </div>
                       )}
                       <div className="flex items-center gap-2">
-                        <select
+                        <ProductSelectForm
+                          products={products}
                           value={formProduct}
-                          onChange={(e) => setFormProduct(e.target.value)}
-                          className="rounded-full bg-white border border-[#e8e0d4] px-2.5 py-1 text-[11px] text-[#6b7280]"
-                        >
-                          {products.map((p) => (
-                            <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
-                          ))}
-                        </select>
+                          onChange={setFormProduct}
+                          className="min-w-[140px]"
+                        />
                         <select
                           value={formVideoFormat}
                           onChange={(e) => setFormVideoFormat(e.target.value)}
